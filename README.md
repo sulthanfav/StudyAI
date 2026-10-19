@@ -2,7 +2,7 @@
 
 StudyAI is an AI-powered Personal Academic Operating System for Indonesian university students. The Campus V1 product target retains all nine PRD modules: workspace and knowledge management, document intelligence, AI tutor, quiz/exam preparation, research, writing, presentation, academic integrity, and planner.
 
-This repository has completed bootstrap and clean-slate PostgreSQL runtime validation. It contains approved product and logical architecture documentation plus a runtime-tested database candidate; it does not yet contain application business logic or production migrations.
+This repository has completed bootstrap and clean-slate PostgreSQL runtime validation and now contains the first ASP.NET Core host foundation. It still contains no application business logic, authentication, tenant-sensitive persistence, or production migrations.
 
 ## Start here
 
@@ -14,15 +14,15 @@ This repository has completed bootstrap and clean-slate PostgreSQL runtime valid
 ## Repository layout
 
 - apps/web — future Next.js and TypeScript client.
-- apps/api — future ASP.NET Core API host.
+- apps/api/StudyAI.Api — ASP.NET Core composition root and host-operability endpoints.
 - apps/mobile — reserved for the future React Native and Expo client; not part of the Web-first launch.
-- src — future .NET modular-monolith projects and shared contracts.
+- src — Domain, Application, Infrastructure, and Contracts project boundaries for the .NET modular monolith.
 - workers/document-processing — future Python extraction/processing worker.
-- tests — future unit, integration, security, end-to-end, migration, and load tests.
+- tests — current unit, architecture, and in-process API integration tests; later security, PostgreSQL, migration, end-to-end, and load suites remain gated.
 - infra/compose and infra/postgres — local PostgreSQL validation runtime and catalog assertions.
 - docs — product, architecture, database, ADR, and implementation planning sources.
 
-Empty implementation directories are intentional reservations only; no framework has been scaffolded.
+Reserved empty directories do not imply that their application or provider has been implemented.
 
 ## Approved baseline
 
@@ -44,7 +44,30 @@ Runtime credentials and evidence are local ignored files. The Docker volume is p
 
 docs/database/StudyAI_Physical_Schema_Reviewed_v1.1.sql is the current clean-slate runtime-tested candidate. It is not a production migration and has not passed RLS/security, true concurrent-session, incremental migration, populated-data restore, performance, or production-operability validation.
 
+## Backend foundation
+
+The repository pins .NET SDK `10.0.300` within the accepted `10.0.3xx` feature band and uses native Microsoft Testing Platform with xUnit v3. From the repository root:
+
+```powershell
+dotnet restore StudyAI.slnx --locked-mode
+dotnet build StudyAI.slnx --no-restore
+dotnet test --solution StudyAI.slnx --no-restore
+dotnet run --project apps/api/StudyAI.Api/StudyAI.Api.csproj --no-restore
+```
+
+The Development launch profile listens on `http://localhost:5080`. Available host routes are:
+
+- `GET /health/live` — process-only liveness; no external dependencies are probed.
+- `GET /health/ready` — foundation readiness; no database, queue, storage, auth, or AI check exists yet.
+- `GET /openapi/v1.json` — development-only OpenAPI document.
+
+Configuration is validated at startup. Default structured logs contain bounded correlation and request metadata, not headers, query strings, bodies, credentials, signed URLs, prompts, notes, or document text. See [Backend Foundation — Iteration 1](docs/architecture/BACKEND_FOUNDATION.md) and [ADR-015](docs/adr/ADR-015_BACKEND_FOUNDATION_TOOLCHAIN.md).
+
+This host is not tenant-secure, database-ready, security-certified, performance-tested, or production-ready. Health success proves only that the foundation process and registered foundation checks are healthy.
+
+The 2026-10-19 foundation verification completed locked restore and a warning-free build, then ran 28 tests with 28 passed, 0 failed, and 0 skipped. Exact commands and scope limitations are recorded in [Backend Foundation — Iteration 1](docs/architecture/BACKEND_FOUNDATION.md).
+
 ## Next milestone
 
-Close the remaining Phase 1 gates—especially runtime roles/RLS, true concurrent-session tests, migration strategy, and the relevant ADRs—before beginning the gated Phase 2 ASP.NET Core/EF Core foundation. Do not treat the clean-slate SQL as a production migration.
+Resolve authentication/session design, runtime roles/RLS and pooled context, EF Core schema ownership and migration strategy, and the remaining Phase 1 concurrency/populated-upgrade evidence before implementing identity or tenant-sensitive persistence. Do not treat the clean-slate SQL as a production migration.
 

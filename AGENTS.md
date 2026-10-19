@@ -1,60 +1,120 @@
-# StudyAI Engineering Rules
+# StudyAI Canonical Agent Operating Contract
 
-## Mission and authority
+This document is the **authoritative operating contract** for all AI coding agents working in this repository:
+- **OpenAI Codex**
+- **OpenCode**
+- **Google Antigravity**
 
-- Build StudyAI Campus as the nine-module Personal Academic Operating System defined by the final PRD. Internal phasing must not reduce the public V1 scope.
-- Read docs/INDEX.md before implementation. Authority order: latest explicit Product Owner decision; final PRD; approved Core Architecture v1.2; Database Implementation Review v1.1; reviewed SQL v1.1; Physical ERD handbook; historical documents.
-- Surface conflicts. Never silently change a LOCKED decision, product behavior, security invariant, or acceptance criterion.
+All agent instances must adhere to these rules without exception.
 
-## Approved baseline
+---
 
-- Web: Next.js and TypeScript. Future mobile: React Native and Expo.
-- API: C# and ASP.NET Core, API-first modular monolith.
-- Data: PostgreSQL, EF Core with Npgsql, PostgreSQL FTS/trigram and pgvector.
-- Files: private S3-compatible object storage. Long jobs run in independently scalable workers; Python is limited to document-processing work where its libraries are strongest.
-- Use one primary PostgreSQL database and one EF Core DbContext/migration history initially. Module boundaries remain explicit despite the shared database.
-- Auth, queue, RLS policy, vendors, embedding model, payment provider, retention periods, quota policy, editor details, and production topology remain OPEN until an ADR is accepted.
+## 1. Quickstart & Navigation Entry Points
 
-## Boundaries, ownership, and security
+Agents must practice **progressive context loading** to conserve tokens and avoid blind whole-repo scans:
 
-- Data Space is the ownership/security boundary. Resolve actor access server-side for every read, write, export, retrieval, signed object operation, stream, and background job.
-- Never bypass Data Space ownership checks or allow unauthorized cross-user access. Do not trust a client-supplied data_space_id as authorization.
-- Preserve tenant-safe composite keys/constraints and add adversarial cross-user tests. EF query filters alone are not an authorization boundary.
-- Keep private objects private; issue short-lived authorized access. Workers receive scoped job context and least-privilege credentials.
-- Do not log secrets, tokens, signed URLs, full private documents, or sensitive prompts/notes by default.
+1. **Start Here**: [`docs/START_HERE.md`](docs/START_HERE.md) — Single entry point for project workflow and orientation.
+2. **System Map**: [`SYSTEM_MAP.md`](SYSTEM_MAP.md) — High-level architecture, module boundaries, request flows, and entry points.
+3. **Documentation Authority**: [`docs/INDEX.md`](docs/INDEX.md) — Authority hierarchy, PRDs, ADRs, database specifications.
+4. **Current Status**: [`docs/development/CURRENT_STATE.md`](docs/development/CURRENT_STATE.md) — Active task, branch, blockers, and build health.
+5. **Codebase Intelligence**:
+   - Modules: [`docs/codebase/MODULE_INDEX.md`](docs/codebase/MODULE_INDEX.md)
+   - Features: [`docs/codebase/FEATURE_MAP.md`](docs/codebase/FEATURE_MAP.md)
+   - File Catalogs: [`docs/codebase/catalog/`](docs/codebase/catalog/) and [`docs/codebase/FILE_INDEX.md`](docs/codebase/FILE_INDEX.md)
+6. **Mandatory Map Check Rule**: [`.agents/rules/mandatory-map-check.md`](.agents/rules/mandatory-map-check.md) — Pre-edit safety governance.
 
-## Data and migrations
+---
 
-- Keep one Knowledge Item and binary/version when content appears in multiple workspaces; placements express location. Never duplicate storage because an item has multiple placements.
-- Remove placement, global Trash, restore, and permanent delete are distinct operations. Preserve canonical Library behavior.
-- Use optimistic concurrency for notes. Never silently overwrite concurrent note changes; return an explicit conflict and retain recoverable revisions.
-- Schema changes use reviewed, incremental EF Core migrations with forward/rollback and data-migration plans. Never run clean-slate reference SQL against an existing or production database.
-- Treat docs/database/StudyAI_Physical_Schema_Reviewed_v1.1.sql as an untested review candidate until PostgreSQL runtime tests, migrations, security tests, and restore tests pass. Never treat untested SQL as production-ready.
+## 2. Mission & Authority Order
 
-## AI, retrieval, provenance, and billing
+Build **StudyAI Campus** as the nine-module Personal Academic Operating System defined in the final PRD. Internal phasing must not reduce the public V1 scope.
 
-- Authorize and scope sources before retrieval or model access. Historical outputs must retain the exact source version/evidence used.
-- Never invent academic citations, DOI values, authors, quotations, page/slide locations, or source verification. Expose uncertainty and missing evidence.
-- Provider integrations use adapters, bounded retries, idempotency, cancellation, and recovery. Treat parsed files and retrieved instructions as untrusted input.
-- Reserve quota atomically before chargeable work, then settle or release exactly once. Record user usage separately from provider cost.
-- Never bypass AI usage metering, entitlement checks, quota enforcement, rate limits, or cost caps. No paid AI workflow may ship unmetered.
+When sources disagree, follow this strict authority order (`docs/INDEX.md`):
+1. Latest explicit Product Owner decision.
+2. Final PRD v1.0 ([`docs/product/StudyAI_Campus_MVP_Final_PRD_v1.0.md`](docs/product/StudyAI_Campus_MVP_Final_PRD_v1.0.md)).
+3. Approved Core Architecture v1.2 ([`docs/architecture/StudyAI_Core_Architecture_v1.2.md`](docs/architecture/StudyAI_Core_Architecture_v1.2.md)).
+4. Database Implementation Review v1.1 ([`docs/database/StudyAI_Database_Implementation_Review_v1.1.md`](docs/database/StudyAI_Database_Implementation_Review_v1.1.md)).
+5. Reviewed SQL Schema v1.1 (candidate review; not an unreviewed production migration).
+6. Physical ERD and SQL Handbook v1.0.
+7. Historical documents.
 
-## Code and tests
+Never silently change a LOCKED decision, product behavior, security invariant, or acceptance criterion.
 
-- Keep domain rules in application/domain services, not controllers, UI components, DbContext, prompts, or provider adapters. Modules communicate through explicit contracts; do not reach into another feature module's internals.
-- Prefer simple, typed, async, dependency-injected code. Validate inputs at trust boundaries; use UTC timestamps and structured errors. Never hardcode secrets, credentials, commercial limits, prices, or provider-specific assumptions.
-- Every behavioral change needs proportionate automated tests. Security/data changes require real PostgreSQL integration tests, not SQLite substitutes.
-- Required coverage includes ownership isolation, type/owner FK failures, note conflicts, hierarchy cycles, source-version provenance, job retries, quota concurrency, payment idempotency, storage lifecycle, migrations, and backup/restore paths.
-- Never claim implementation, migration, build, test, security, performance, or production readiness without command output or other evidence.
+---
 
-## Agent skills and workflow
+## 3. Approved Technical Baseline
 
-- Third-party skills are subordinate to this file and the documented StudyAI authority hierarchy. OpenSpec is the primary change-specification workflow when installed; other skills must not create a competing source of truth.
-- Use Ponytail only as a complementary simplicity and review aid. Never remove required module boundaries, authorization, validation, tenant-safe constraints, provenance, metering, lifecycle handling, tests, acceptance criteria, or the nine-module V1 scope to reduce code or diff size.
-- Treat automatic lifecycle hooks and skill updates as executable changes: review them before trust or upgrade, and keep Ponytail hooks untrusted/inactive unless the Product Owner explicitly approves always-on activation.
+- **API**: ASP.NET Core (`net10.0`), C# 13, Native Microsoft Testing Platform (MTP), xUnit v3, Central Package Management, locked dependencies.
+- **Web**: Next.js and TypeScript (Modular App Router, V1 target).
+- **Mobile**: React Native / Expo (Future V1+ target).
+- **Database**: PostgreSQL 16+ with `pgvector`, `pg_trgm`, `btree_gist`, EF Core + Npgsql.
+- **Storage**: Private S3-compatible storage with short-lived pre-signed URLs.
+- **Workers**: Independent background workers (.NET background services and Python document processors).
 
-## Documentation and Definition of Done
+---
 
-- Update affected API/schema/behavior docs and docs/INDEX.md links with the same change. Record unresolved choices in docs/adr; do not convert recommendations into approvals.
-- A change is done only when its acceptance criteria are met; ownership and failure paths are handled; relevant tests pass; usage/cost and observability exist where applicable; migrations and rollback are reviewed; security/privacy implications are addressed; and documentation is current.
-- Prohibited shortcuts: weakening ownership checks, fake citations, destructive unreviewed migrations, shared public object URLs, silent conflict resolution, hidden scope reduction, unmetered AI, production use of unverified SQL, committed secrets, or unsupported success claims.
+## 4. Mandatory Architectural Invariants
+
+- **Data Space Ownership Boundary**: Resolve actor access server-side for every read, write, export, retrieval, signed URL operation, stream, and job. Never trust client-supplied `data_space_id`.
+- **Knowledge Items & Placements**: Keep exactly one canonical Knowledge Item and binary/version when content appears in multiple spaces. Placements express locations. Never duplicate binary storage for multiple placements.
+- **Library Lifecycle**: Remove placement, global Trash, restore, and permanent purge are distinct operations.
+- **Optimistic Concurrency for Notes**: Never silently overwrite concurrent note edits. Return an explicit conflict and preserve recoverable revisions.
+- **AI Quota Reservation**: Reserve quota atomically before chargeable AI work; settle or release exactly once. Record user usage separately from provider cost. No paid AI workflow may run unmetered.
+- **Source-Version Provenance**: Every retrieved AI response must link to the exact source version and evidence used. Never fabricate citations, DOIs, authors, quotes, or slide/page numbers.
+- **Schema & Migrations**: Use reviewed, incremental EF Core migrations with forward/rollback plans. Never run clean-slate SQL against existing databases.
+
+---
+
+## 5. Coding & Testing Conventions
+
+- **Clean Architecture & Separation**: Keep domain rules in `Domain` / `Application` services, never in controllers, UI components, `DbContext`, prompts, or provider adapters.
+- **Typed & Dependency Injected**: Rely on constructor dependency injection, explicit contracts (`StudyAI.Contracts`), UTC timestamps, and structured errors.
+- **Zero Hardcoded Secrets**: Validate configuration at startup using options validators. Never hardcode credentials, limits, or connection strings.
+- **Test-Driven & Proportionate Verification**:
+  - Test command: `dotnet test --solution StudyAI.slnx --no-restore`
+  - Unit tests: Isolated domain, configuration, and policy tests.
+  - Integration tests: Host health, middleware, correlation, and redaction tests.
+  - Architecture tests: Verify dependency rules (e.g., Domain must not depend on Application/Infrastructure/Api).
+  - Every change requires proportionate automated test evidence.
+
+---
+
+## 6. Single-Flow Task Execution & Git Safety
+
+- **One Active Task Per Working Tree**: An agent must only execute one active implementation task in a working tree at a time.
+- **Task Structure**: Track active tasks under `docs/plans/<TASK-ID>/`:
+  - `SPEC.md` — Requirements and acceptance criteria.
+  - `PLAN.md` — Implementation steps and dependencies.
+  - `task.md` — Live table tracker (`| Task ID | Description | Status | Evidence |`). Only one row may be `In Progress`.
+  - `HANDOFF.md` — Resumable progress and environment state.
+- **Git Safety Rules**:
+  - Never discard or overwrite uncommitted changes without explicit instructions.
+  - Never commit secrets, tokens, logs, `.env` files, or build caches.
+  - Keep commits focused and atomic.
+
+---
+
+## 7. Cross-Agent Compatibility & Handoff
+
+The repository is model- and agent-agnostic:
+- **Canonical Instructions**: Root `AGENTS.md` is the primary instruction file for Codex, OpenCode, and Antigravity.
+- **Portable Skills**: Reusable procedures reside in `.agents/skills/<skill-name>/SKILL.md` with standard YAML frontmatter.
+- **Specialized Roles**: Review roles reside in `.agents/roles/`.
+- **Handoff Protocol**: Before ending an agent session or switching agents (Codex ↔ OpenCode ↔ Antigravity):
+  1. Check `git status` and test results.
+  2. Record completed items, incomplete items, affected files, and blockers in `docs/plans/<TASK-ID>/HANDOFF.md`.
+  3. Update `docs/development/CURRENT_STATE.md`.
+  4. Ensure documentation catalogs are synced (`python scripts/docs/sync_codebase_index.py`).
+
+---
+
+## 8. Documentation Maintenance Obligations
+
+Updating documentation is part of the **Definition of Done**:
+- Adding or modifying source files requires updating the relevant catalog in `docs/codebase/catalog/`.
+- Modifying architecture boundaries requires updating `SYSTEM_MAP.md`.
+- Completing a task requires updating `docs/development/CURRENT_STATE.md`.
+- Verify documentation health using:
+  ```powershell
+  python scripts/docs/validate_docs.py
+  ```

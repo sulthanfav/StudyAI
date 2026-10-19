@@ -1,0 +1,14 @@
+@baseUrl = http://localhost:5080
+
+### Process liveness
+GET {{baseUrl}}/health/live
+X-Correlation-ID: manual-health-check
+
+### Foundation readiness
+GET {{baseUrl}}/health/ready
+
+### Development OpenAPI document
+GET {{baseUrl}}/openapi/v1.json
+
+### Safe not-found Problem Details
+GET {{baseUrl}}/api/v1/not-implemented

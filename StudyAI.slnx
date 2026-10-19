@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/apps/">
+    <Project Path="apps/api/StudyAI.Api/StudyAI.Api.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/StudyAI.Application/StudyAI.Application.csproj" />
+    <Project Path="src/StudyAI.Contracts/StudyAI.Contracts.csproj" />
+    <Project Path="src/StudyAI.Domain/StudyAI.Domain.csproj" />
+    <Project Path="src/StudyAI.Infrastructure/StudyAI.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/StudyAI.Api.IntegrationTests/StudyAI.Api.IntegrationTests.csproj" />
+    <Project Path="tests/StudyAI.ArchitectureTests/StudyAI.ArchitectureTests.csproj" />
+    <Project Path="tests/StudyAI.UnitTests/StudyAI.UnitTests.csproj" />
+  </Folder>
+</Solution>

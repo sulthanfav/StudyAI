@@ -1,5 +1,8 @@
 # Project rule inventory
 
-The active repository rules are maintained in the root `AGENTS.md`. Do not duplicate them here because two editable copies could drift.
+The active repository rules are maintained in root `AGENTS.md` and linked governance specifications.
 
-This folder is reserved for reviewed supplemental rule assets only. Adding a file here does not make it authoritative or automatically discoverable by Codex. Any future rule must state its scope, owner, precedence, and review date, and must not override the StudyAI authority hierarchy.
+## Active Rules
+- [`mandatory-map-check.md`](mandatory-map-check.md): Mandatory safety governance, understand-before-modify principle, trace-by-flow, and risk-based verification matrix.
+
+This directory houses reusable, portable engineering rules referenced by `AGENTS.md`. Rules here are subordinate to the StudyAI authority hierarchy in `docs/INDEX.md`.

@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\StudyAI.Domain\StudyAI.Domain.csproj" />
+  </ItemGroup>
+</Project>

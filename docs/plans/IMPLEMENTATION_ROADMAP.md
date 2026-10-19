@@ -1,6 +1,6 @@
 # StudyAI Campus V1 Implementation Roadmap
 
-Status: planning baseline, 2026-10-19. This roadmap sequences delivery; it does not reduce the public V1 scope or approve any OPEN decision.
+Status: planning baseline, 2026-10-19. Backend Foundation Iteration 1 is implemented and verified as a host-only slice; this roadmap still does not reduce the public V1 scope or approve any OPEN decision.
 
 ## Program rules
 
@@ -120,6 +120,12 @@ Prove or correct the reviewed physical schema in an isolated PostgreSQL 16+ runt
 ### Objective
 
 Create the modular ASP.NET Core foundation, identity boundary, ownership enforcement, and operational guardrails required by every module.
+
+### Iteration 1 status
+
+The host-only foundation is complete: .NET 10/native MTP pins, the eight-project modular skeleton, startup configuration validation, safe JSON request metadata, correlation, Problem Details, liveness/readiness, Development OpenAPI, and unit/architecture/API integration tests. Fresh evidence is recorded in `docs/architecture/BACKEND_FOUNDATION.md`.
+
+This does not complete Phase 2. Authentication, actor-to-Data-Space authorization, EF Core/Npgsql mappings and migrations, runtime roles/RLS, outbox/queue, rate limits, storage, and workers remain behind their existing ADR and Phase 1 evidence gates.
 
 ### Prerequisites
 
@@ -434,4 +440,4 @@ Prove the complete nine-module product, security model, cost envelope, recoverab
 
 ## Immediate next action
 
-Review the Phase 1 runtime evidence in `docs/database/DATABASE_RUNTIME_VALIDATION_REPORT.md`, then close the remaining Phase 1 gates: runtime DB roles/RLS and pooled-context experiments, true concurrent-session tests, populated incremental-migration rehearsal, and the relevant ADR outcomes. Prepare but do not silently approve ADRs for authentication, queue/outbox, runtime DB roles/RLS, storage lifecycle, and PostgreSQL/pgvector version pinning. Do not scaffold feature modules or production EF Core migrations until those gates are accepted.
+Keep the verified Backend Foundation Iteration 1 host stable. Next, close the persistence/security prerequisites: run the isolated runtime-role/RLS and pooled-context experiment, add true concurrent-session tests, define EF Core schema/migration ownership and compatible package pins, and obtain the relevant ADR outcomes. In parallel, prepare ADR-001 authentication/session acceptance evidence. Do not implement identity, tenant-sensitive persistence, feature modules, or production EF Core migrations until their gates are accepted.

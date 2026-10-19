@@ -1,5 +1,10 @@
-# Project role inventory
+# StudyAI Specialized Review Roles
 
-No custom StudyAI role is installed or active.
+This directory defines lightweight review checklists and personas for evaluating changes against task requirements and StudyAI architectural invariants:
 
-This folder is reserved for reviewed role designs and inventories. Codex-native custom agents are discovered from `.codex/agents/*.toml`, not from this folder. Creating or activating one requires a separate review of its instructions, permissions, handoffs, and overlap with `AGENTS.md` and OpenSpec.
+- [`software-architecture-reviewer.md`](software-architecture-reviewer.md): Clean Architecture boundaries, modular invariants, dependency directions, and domain purity.
+- [`security-reviewer.md`](security-reviewer.md): Tenant/Data Space isolation, credential safety, log redaction, and input sanitization.
+- [`code-quality-reviewer.md`](code-quality-reviewer.md): C# idiomatic patterns, test quality, async correctness, and performance.
+- [`frontend-ui-reviewer.md`](frontend-ui-reviewer.md): UI/UX design quality, accessibility (WCAG AA), responsive styling, and client API contracts.
+
+These review roles provide structured evaluation checklists. In single-agent environments, agents use these checklists before marking tasks complete.

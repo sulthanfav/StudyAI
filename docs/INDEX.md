@@ -29,6 +29,7 @@ If a lower-ranked document conflicts with a higher-ranked source, stop, record t
 | Document | Purpose | Status |
 |---|---|---|
 | [StudyAI_Core_Architecture_v1.2.md](architecture/StudyAI_Core_Architecture_v1.2.md) | Defines the approved logical architecture, modular boundaries, ownership model, placements, lifecycle, provenance, AI jobs, quota invariants, security, and ADR register. | APPROVED logical baseline. Physical design, vendors, policy numbers, and performance evidence remain separate. |
+| [BACKEND_FOUNDATION.md](architecture/BACKEND_FOUNDATION.md) | Describes the Iteration 1 ASP.NET Core project boundaries, safe host configuration/logging, health contract, local commands, and explicit readiness exclusions. | Implemented foundation documentation; not a tenant-security, persistence, or production-readiness claim. |
 | [StudyAI_Core_Database_Architecture_v1.md](architecture/StudyAI_Core_Database_Architecture_v1.md) | Earlier conceptual database/knowledge architecture and initial open decisions. | Historical. Useful for rationale only; it cannot override v1.2. |
 
 ## Database documents and SQL
@@ -50,6 +51,18 @@ If a lower-ranked document conflicts with a higher-ranked source, stop, record t
 | [AGENT_SKILLS_ASSESSMENT.md](plans/AGENT_SKILLS_ASSESSMENT.md) | Evaluates candidate Codex/agent skills and plugins, overlaps, risks, and a staged adoption sequence. | Active assessment. Ponytail approval/installation is recorded; other entries remain recommendations until separately approved and verified. |
 | [CODEX_SKILLS_SETUP.md](plans/CODEX_SKILLS_SETUP.md) | Records approved Codex tooling, installed revisions, scope, permissions, lifecycle-hook security, verification, maintenance, and StudyAI workflow integration. | Active setup record. Project-level OpenSpec, a narrow official .NET subset, and three Superpowers skills are installed; Ponytail hooks are untrusted/inactive; Context7 and Vercel remain explicitly deferred. |
 | [OPEN_DECISIONS.md](adr/OPEN_DECISIONS.md) | Consolidates unresolved technical/product decisions, their deadlines, constraints, options, recommendations, and required evidence. | Active decision queue. Recommendations are not approvals. |
+| [ADR-015_BACKEND_FOUNDATION_TOOLCHAIN.md](adr/ADR-015_BACKEND_FOUNDATION_TOOLCHAIN.md) | Accepts the .NET 10 SDK feature band, native Microsoft Testing Platform, xUnit v3, central package pins, and NuGet lock policy for Backend Foundation Iteration 1 only. | ACCEPTED. Does not approve EF Core, authentication, persistence, or other open infrastructure choices. |
+| [AI_ARCHITECTURE.md](plans/AI_ARCHITECTURE.md) | Multi-Agent Engineering & Codebase Intelligence System v2.0 blueprint defining universal operating contracts, living system map, file catalogs, and cross-agent handoff. | IMPLEMENTED baseline for developer experience and agent coordination. |
+
+## Multi-Agent & Codebase Intelligence documents
+
+| Document | Purpose | Status |
+|---|---|---|
+| [START_HERE.md](START_HERE.md) | Fast single entry point for developers and AI coding agents (Codex, OpenCode, Antigravity). | Active navigation guide. |
+| [CURRENT_STATE.md](development/CURRENT_STATE.md) | Live index of active tasks, current branches, build health, and immediate next steps. | Active project status. |
+| [MODULE_INDEX.md](codebase/MODULE_INDEX.md) | Directory of applications, core modules, test suites, and boundary responsibilities. | Active codebase directory. |
+| [FEATURE_MAP.md](codebase/FEATURE_MAP.md) | Map tracing user-facing and foundation features to concrete implementation and test files. | Active feature map. |
+| [FILE_INDEX.md](codebase/FILE_INDEX.md) | Master aggregate index of source and infrastructure files with documentation coverage. | Automatically synchronized. |
 
 ## What is approved
 
