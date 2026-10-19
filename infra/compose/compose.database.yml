@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.7-pg16-bookworm
+    environment:
+      POSTGRES_USER: ${STUDYAI_POSTGRES_ADMIN_USER:?Set STUDYAI_POSTGRES_ADMIN_USER}
+      POSTGRES_PASSWORD: ${STUDYAI_POSTGRES_ADMIN_PASSWORD:?Set STUDYAI_POSTGRES_ADMIN_PASSWORD}
+      POSTGRES_DB: postgres
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${STUDYAI_POSTGRES_PORT:-55432}:5432"
+    volumes:
+      - studyai_postgres_validation_data:/var/lib/postgresql/data
+      - ../../docs/database:/workspace/database:ro
+      - ../../infra/postgres:/workspace/validation:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+    restart: unless-stopped
+    shm_size: 256mb
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  studyai_postgres_validation_data:
+    name: studyai-postgres-validation-data
+

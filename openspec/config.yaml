@@ -1,0 +1,23 @@
+schema: spec-driven
+
+context: |
+  OpenSpec is the primary workflow for change-specific specifications, not a replacement for project authority.
+  Follow root AGENTS.md and the authority order in docs/INDEX.md. Never override the Final PRD, approved Core Architecture v1.2, accepted ADRs, security/data invariants, acceptance criteria, or the nine-module Campus V1 scope.
+  Record unresolved decisions as unresolved; do not convert a recommendation into approval.
+
+rules:
+  proposal:
+    - Reference the governing StudyAI documents and identify any open decision or conflict.
+    - State security, ownership, data-integrity, provenance, quota, lifecycle, and testing impact when relevant.
+  tasks:
+    - Include proportionate tests, documentation updates, failure paths, and verification evidence.
+    - Do not schedule implementation that depends on an unresolved blocking ADR.
+
+operations:
+  apply:
+    guidance:
+      - Re-read AGENTS.md and docs/INDEX.md before implementation.
+      - Preserve Data Space authorization, tenant-safe constraints, provenance, metering, lifecycle behavior, and module boundaries.
+  archive:
+    guidance:
+      - Archive only after acceptance criteria and verification evidence are complete.
