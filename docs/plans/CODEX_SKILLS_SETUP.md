@@ -27,7 +27,7 @@ OpenSpec remains the primary specification and change-management workflow. Ponyt
 | OpenSpec | Primary change specification and traceability | **Initialized project-level with OpenSpec 1.14.3; six Codex skills discovered** |
 | Context7 | Version-relevant library documentation | Audited but **deferred** because the supported Codex paths require OAuth or an API key/external account permission |
 | Official .NET Agent Skills | Narrow C#, ASP.NET Core, EF Core, and testing guidance | **Four individual skills installed project-level from a pinned official revision** |
-| Ponytail | Complementary simplicity, maintainability, and code review | **Installed and verified; lifecycle hooks not trusted/activated** |
+| Ponytail | Complementary simplicity, maintainability, and code review | **Installed and verified as user-level plugin; project-level `SKILL.md` copies added for repo sharing; lifecycle hooks not trusted/activated** |
 | Superpowers subset | Debugging/TDD/verification only where it does not duplicate OpenSpec | **Three individual skills installed project-level; plugin and hooks excluded** |
 | Vercel frontend skills | React/accessibility/performance guidance | Official `vercel-react-best-practices` audited; deferred until the frontend baseline exists |
 | Playwright CLI/skills | Interactive browser diagnosis alongside deterministic E2E tests | Deferred until UI/E2E work begins |
@@ -40,7 +40,7 @@ Project skills are stored in `.agents/skills`. `.agents/rules` and `.agents/role
 |---|---|
 | Official repository | `https://github.com/DietrichGebert/ponytail` |
 | Installation method | Official Codex plugin marketplace commands |
-| Scope | User-level Codex plugin |
+| Scope | User-level Codex plugin; project-level `SKILL.md` copies under `.agents/skills/ponytail*` |
 | Plugin identity | `ponytail@ponytail` |
 | Manifest version | `5.3.2` |
 | Audited/installed revision | `09c434ab73ca43761c5d8b0c5d341926c2fba710` |
@@ -236,6 +236,9 @@ Installed individual skills:
 
 The Superpowers plugin, session-start hook, planning/execution workflows, worktree workflow, and subagent workflows were not installed. The installed debugging folder includes `find-polluter.sh`; it was reviewed but not executed. It enumerates tests and runs `npm test` per file, so it must only be used after confirming the repository and test runner match its assumptions. Byte-for-byte comparison against the audited checkout passed for all three installed directories.
 
+### Ponytail project-level copies
+
+On 2026-10-20, the six Ponytail `SKILL.md` files were copied verbatim from the audited user-level cache (`C:\Users\sulth\.codex\plugins\cache\ponytail\ponytail\5.3.2\skills`) into `.agents/skills/ponytail*`. SHA-256 comparison passed for all six files. These copies make the skills available to collaborators through the repository, but they do not install or trust Ponytail lifecycle hooks, which remain user-level and inactive. The upstream plugin remains the canonical source; future updates require re-audit and hash comparison before copying.
 ## 12. Context7 decision
 
 The official repository was audited at revision `ae4871e9a8cbed00bc0f4a40b0b5b61e2d37378c`; the current npm MCP package reported version 4.4.3. The supported Codex integration choices either:
