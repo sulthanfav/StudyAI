@@ -41,10 +41,10 @@ To prevent confusion between plans and reality, this repository distinguishes fo
 
 | Tier | Technology | Current Status |
 |---|---|---|
-| **API Backend** | ASP.NET Core (`net10.0`), C# 13, Native MTP, xUnit v3 | Foundation Host Implemented (`apps/api/StudyAI.Api`) |
+| **API Backend** | ASP.NET Core (`net10.0`), C# 14 (`LangVersion=14.0`), Native MTP, xUnit v3 | Foundation Host Implemented (`apps/api/StudyAI.Api`, port 5080 per `launchSettings.json`) |
 | **Web Frontend** | Next.js 15, TypeScript, React 19, Vanilla CSS | Planned V1 (`apps/web`) |
 | **Mobile App** | React Native, Expo | Future Target (`apps/mobile`) |
-| **Database** | PostgreSQL 16+ (`pgvector`, `pg_trgm`, `btree_gist`), EF Core 10 | Schema v1.1 Validated; EF Core model pending |
+| **Database** | PostgreSQL 16+ (`pgvector`, `pg_trgm`, `btree_gist`), EF Core 10 | Schema v1.1 Validated on Docker; EF Core model/mapping pending in Iteration 2 |
 | **Storage** | S3-compatible private object storage | Planned (`infra/storage`) |
 | **Workers** | .NET BackgroundService + Python document processing | Planned (`workers/`) |
 | **CI / Tooling** | Git, PowerShell, Python 3.8+ doc scripts | Implemented |
@@ -67,13 +67,13 @@ graph TD
     end
 
     subgraph Modules ["Modular Monolith (src/)"]
-        Contracts["StudyAI.Contracts<br/>(DTOs, Events, Public Interfaces)"]
-        Application["StudyAI.Application<br/>(Use Cases, Commands, Queries)"]
-        Domain["StudyAI.Domain<br/>(Entities, Value Objects, Domain Rules)"]
-        Infrastructure["StudyAI.Infrastructure<br/>(EF Core, Npgsql, S3, AI Adapters)"]
+        Contracts["StudyAI.Contracts<br/>(Scaffolded DTOs & Contracts)"]
+        Application["StudyAI.Application<br/>(Scaffolded Application Layer)"]
+        Domain["StudyAI.Domain<br/>(Scaffolded Domain Layer)"]
+        Infrastructure["StudyAI.Infrastructure<br/>(Scaffolded Project; EF Core & Adapters Planned)"]
     end
 
-    subgraph Data ["Persistence & External Services"]
+    subgraph Data ["Persistence & External Services [Target Architecture]"]
         Postgres[(PostgreSQL 16+<br/>pgvector, pg_trgm)]
         S3[(S3 Object Storage)]
         AIGateway[AI Provider Adapters]
@@ -87,9 +87,9 @@ graph TD
     Application --> Contracts
     Infrastructure --> Application
     Infrastructure --> Domain
-    Infrastructure --> Postgres
-    Infrastructure --> S3
-    Infrastructure --> AIGateway
+    Infrastructure -.->|Planned| Postgres
+    Infrastructure -.->|Planned| S3
+    Infrastructure -.->|Planned| AIGateway
 ```
 
 ### Module Boundary Dependency Invariants

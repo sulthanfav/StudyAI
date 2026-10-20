@@ -14,7 +14,7 @@ Navigation: [`SYSTEM_MAP.md`](../../SYSTEM_MAP.md) | [`docs/START_HERE.md`](../S
   - Host configuration, options validation, and service collection composition.
   - Health check endpoints (`/health/live`, `/health/ready`).
   - Request pipeline middleware (Correlation ID, structured JSON logging, redaction).
-- **Public Boundaries**: HTTP REST endpoints on configured ports (`https://localhost:7001`, `http://localhost:5001`).
+- **Public Boundaries**: HTTP REST endpoints on configured port (`http://localhost:5080` per `launchSettings.json`).
 - **Entry Points**: [`apps/api/StudyAI.Api/Program.cs`](../../apps/api/StudyAI.Api/Program.cs).
 - **Associated Tests**: [`tests/StudyAI.Api.IntegrationTests`](../../tests/StudyAI.Api.IntegrationTests/).
 - **File Catalog**: [`catalog/api-host.md`](catalog/api-host.md).
@@ -34,38 +34,30 @@ Navigation: [`SYSTEM_MAP.md`](../../SYSTEM_MAP.md) | [`docs/START_HERE.md`](../S
 ## 2. Core Modules (`src/`)
 
 ### `src/StudyAI.Domain`
-- **Purpose**: Pure domain layer containing enterprise business rules, entities, value objects, and domain events.
-- **Responsibilities**:
-  - Data Space boundaries and invariants.
-  - Knowledge item domain models.
-  - Note concurrency and revision logic.
-  - Quota accounting rules.
+- **Purpose**: Pure domain layer for enterprise business rules, entities, value objects, and domain events.
+- **Current Status**: Foundation project scaffold (`StudyAI.Domain.csproj`, `packages.lock.json`).
+- **Target Planned Responsibilities**: Data Space boundaries, Knowledge item models, Note concurrency, Quota accounting.
 - **Dependencies**: None (enforced by architecture tests).
 - **File Catalog**: [`catalog/domain.md`](catalog/domain.md).
 
 ### `src/StudyAI.Application`
 - **Purpose**: Application orchestration layer executing user use cases.
-- **Responsibilities**:
-  - Command and query handlers.
-  - Orchestration of domain entities and repository interfaces.
-  - Cross-cutting authorization and quota reservation pipelines.
+- **Current Status**: Foundation project scaffold (`StudyAI.Application.csproj`, `packages.lock.json`).
+- **Target Planned Responsibilities**: Command/query handlers, domain orchestration, cross-cutting quota/auth pipelines.
 - **Dependencies**: `StudyAI.Domain`, `StudyAI.Contracts`.
 - **File Catalog**: [`catalog/application.md`](catalog/application.md).
 
 ### `src/StudyAI.Infrastructure`
 - **Purpose**: Adapters for external dependencies, persistence, and third-party systems.
-- **Responsibilities**:
-  - PostgreSQL persistence via EF Core and Npgsql.
-  - S3-compatible private object storage client.
-  - AI provider adapters (LLM gateways, embedding clients).
+- **Current Status**: Foundation project scaffold (`StudyAI.Infrastructure.csproj`, `packages.lock.json`).
+- **Target Planned Responsibilities**: PostgreSQL persistence via EF Core and Npgsql, S3 object storage client, AI provider adapters (planned for subsequent iterations; zero provider code in current Iteration 1).
 - **Dependencies**: `StudyAI.Domain`, `StudyAI.Application`, `StudyAI.Contracts`.
 - **File Catalog**: [`catalog/infrastructure.md`](catalog/infrastructure.md).
 
 ### `src/StudyAI.Contracts`
 - **Purpose**: Shared public contracts, DTOs, and event schemas.
-- **Responsibilities**:
-  - Request and response models for public endpoints.
-  - Serialization contracts.
+- **Current Status**: Foundation project scaffold (`StudyAI.Contracts.csproj`, `packages.lock.json`).
+- **Target Planned Responsibilities**: Public endpoint request/response models and serialization contracts.
 - **Dependencies**: None.
 - **File Catalog**: [`catalog/contracts.md`](catalog/contracts.md).
 

@@ -4,7 +4,8 @@ Task ID: `TASK-[ID]`
 Date / Timestamp: YYYY-MM-DD HH:MM UTC  
 Agent Identity: [e.g., Antigravity / Codex / OpenCode]  
 Branch: `main`  
-Latest Commit SHA: `[SHA]`
+Latest Commit SHA: `[SHA]`  
+OpenSpec Change: `[e.g., openspec/changes/<change-id>/ or None (Non-OpenSpec task)]`
 
 ---
 

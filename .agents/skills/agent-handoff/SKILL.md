@@ -29,19 +29,21 @@ Before disconnecting or ending a turn:
    ```powershell
    dotnet test --solution StudyAI.slnx --no-restore
    ```
-3. **Record Evidence in `docs/plans/<TASK-ID>/HANDOFF.md`**:
+3. **Record Handoff in `HANDOFF.md`**:
    - Outgoing agent identity and timestamp.
    - Current branch and last commit SHA.
-   - Completed tasks with verified evidence.
-   - Incomplete tasks and immediate next step.
+   - For OpenSpec implementation changes: Link directly to canonical artifacts in `openspec/changes/<change-id>/` (`tasks.md`, `specs/`, `design.md`). Do **not** duplicate tasks into a competing `task.md`.
+   - For non-OpenSpec tasks: link to `docs/plans/<TASK-ID>/task.md`.
    - List of modified or created files.
    - Actual test run summary (passed / failed / duration).
    - Known blockers, caveats, or unverified items.
+   - Next recommended immediate step.
 4. **Update `docs/development/CURRENT_STATE.md`**:
-   - Update active task pointer, branch status, and blocker summary.
-5. **Ensure Catalogs Synced**:
+   - Update active OpenSpec change or task pointer, branch status, and blocker summary.
+5. **Verify Documentation & Catalogs**:
    ```powershell
-   python scripts/docs/sync_codebase_index.py
+   python scripts/docs/sync_codebase_index.py --check
+   python scripts/docs/validate_docs.py
    ```
 
 ---
@@ -53,15 +55,16 @@ When entering the repository as a new or resumed agent:
 1. **Read Canonical Operating Contract**:
    Read root `AGENTS.md`.
 2. **Check Current State**:
-   Read `docs/development/CURRENT_STATE.md` to identify the active task and branch.
-3. **Read Active Task Context**:
-   Read `docs/plans/<TASK-ID>/SPEC.md` and `docs/plans/<TASK-ID>/HANDOFF.md`.
+   Read `docs/development/CURRENT_STATE.md` to identify the active OpenSpec change or task and branch.
+3. **Read Active Context**:
+   - For an OpenSpec change: Read `openspec/changes/<change-id>/tasks.md` and `HANDOFF.md`.
+   - For a non-OpenSpec task: Read `docs/plans/<TASK-ID>/SPEC.md` and `HANDOFF.md`.
 4. **Verify Working Tree Against Handoff**:
    Run `git status -s` to confirm uncommitted changes match the recorded handoff.
 5. **Identify Next Actionable Step**:
    Read the "Next Recommended Step" in `HANDOFF.md`.
 6. **Execute Next Step**:
-   Do not repeat full-repository analysis; proceed directly to the identified step.
+   Do not repeat full-repository analysis; proceed directly to the identified step in the canonical task ledger.
 
 ---
 
@@ -69,7 +72,7 @@ When entering the repository as a new or resumed agent:
 
 If the prior agent crashed, ran out of quota, or exited without writing `HANDOFF.md`:
 1. Check `git status` and `git diff` to see what was modified.
-2. Check `docs/plans/` for the latest modified task directory.
-3. Inspect `task.md` to see which row was marked `In Progress`.
-4. Run tests (`dotnet test --solution StudyAI.slnx`) to discover whether the current state compiles and passes.
+2. Check `openspec/changes/` for the latest modified change, or `docs/plans/` for standalone tasks.
+3. Inspect `tasks.md` to see which item was currently active.
+4. Run tests (`dotnet test --solution StudyAI.slnx --no-restore`) to discover whether the current state compiles and passes.
 5. Record recovered findings in `HANDOFF.md` and continue.

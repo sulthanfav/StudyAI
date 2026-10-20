@@ -3,7 +3,10 @@
 Task ID: `TASK-[ID]`  
 Date Created: YYYY-MM-DD  
 Status: DRAFT / IN_PROGRESS / COMPLETED  
-Owning Module: `apps/...` or `src/...`
+Owning Scope: Governance / Tooling / Research
+
+> [!NOTE]
+> This template is reserved for non-implementation tasks only (e.g. governance, documentation tooling, or exploratory spikes). All feature, API, database, and codebase implementation changes must use OpenSpec (`openspec/changes/<change-id>/`) as the canonical specification and task ledger.
 
 ---
 

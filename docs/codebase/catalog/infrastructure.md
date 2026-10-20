@@ -16,7 +16,7 @@ Status: **VERIFIED**
 - **Dependencies**: `StudyAI.Domain`, `StudyAI.Application`, `StudyAI.Contracts`.
 - **Known Callers**: `StudyAI.Api`.
 - **Associated Tests**: `ProjectReferenceRulesTests.cs`.
-- **Security / Architectural Notes**: Houses EF Core and external provider integrations.
+- **Security / Architectural Notes**: Foundation project scaffold in Iteration 1. Will house EF Core persistence and external provider adapters in future iterations; currently contains zero database, storage, or AI provider code.
 - **Verification Status**: `VERIFIED`
 
 ### `src/StudyAI.Infrastructure/packages.lock.json`

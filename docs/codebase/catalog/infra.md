@@ -17,7 +17,7 @@ Status: **VERIFIED**
 ### `Directory.Build.props`
 - **Module**: `root`
 - **Category**: Configuration (Build Defaults)
-- **Responsibility**: Repository-wide MSBuild properties (Nullable enabled, TreatWarningsAsErrors, deterministic builds, C# 13 language version).
+- **Responsibility**: Repository-wide MSBuild properties (Nullable enabled, TreatWarningsAsErrors, deterministic builds, C# 14 language version / LangVersion=14.0).
 - **Verification Status**: `VERIFIED`
 
 ### `Directory.Packages.props`

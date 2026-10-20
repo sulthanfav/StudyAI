@@ -14,7 +14,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Set, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 CATALOG_DIR = REPO_ROOT / "docs" / "codebase" / "catalog"
@@ -32,7 +32,7 @@ IGNORED_EXTENSIONS = {
 }
 
 RELEVANT_EXTENSIONS = {
-    ".cs", ".json", ".props", ".slnx", ".sql", ".ps1", ".py", ".sh",
+    ".cs", ".csproj", ".json", ".props", ".slnx", ".sql", ".ps1", ".py", ".sh",
     ".yml", ".yaml", ".http", ".editorconfig", ".env.example", ".gitignore"
 }
 
@@ -50,7 +50,6 @@ def get_tracked_files() -> List[str]:
         )
         files = res.stdout.splitlines()
     except Exception:
-        # Filesystem fallback
         files = []
         for root, dirs, filenames in os.walk(REPO_ROOT):
             dirs[:] = [d for d in dirs if d not in IGNORED_DIR_NAMES]
@@ -59,17 +58,14 @@ def get_tracked_files() -> List[str]:
                 rel_path = (rel_root / f).as_posix()
                 files.append(rel_path)
 
-    # Filter to relevant source/config files (exclude docs, openspec, .agents from file catalog)
     filtered = []
     for f in files:
         path = Path(f)
         posix_str = path.as_posix()
-        # Exclude generated / build / markdown docs from the source code catalog
         if any(part in IGNORED_DIR_NAMES for part in path.parts):
             continue
         if path.suffix.lower() in IGNORED_EXTENSIONS:
             continue
-        # Only catalog source, infra, config, and script files
         if posix_str.startswith("docs/") or posix_str.startswith("openspec/") or posix_str.startswith(".agents/"):
             continue
         if posix_str.endswith(".md"):
@@ -100,7 +96,7 @@ def parse_catalogs() -> Tuple[Dict[str, Dict[str, str]], Dict[str, List[str]]]:
         catalog_name = catalog_file.name
         by_catalog[catalog_name] = []
         content = catalog_file.read_text(encoding="utf-8")
-        
+
         current_file = None
         current_meta = {}
 
@@ -203,51 +199,91 @@ def generate_master_index(entries: Dict[str, Dict[str, str]], by_catalog: Dict[s
     return "\n".join(lines)
 
 
-def main():
-    check_only = "--check" in sys.argv
-    print("=== StudyAI Codebase Index Synchronization ===")
-    
-    tracked_files = get_tracked_files()
-    print(f"Discovered relevant source files: {len(tracked_files)}")
+def run_sync(
+    tracked_files: Optional[List[str]] = None,
+    entries: Optional[Dict[str, Dict[str, str]]] = None,
+    by_catalog: Optional[Dict[str, List[str]]] = None,
+    check_only: bool = False,
+    allow_repair: bool = False,
+    dry_run: bool = False
+) -> Tuple[int, str]:
+    """
+    Executes synchronization and validation of catalogs.
+    Returns (exit_code, message).
+    """
+    if tracked_files is None:
+        tracked_files = get_tracked_files()
 
-    entries, by_catalog = parse_catalogs()
+    if entries is None or by_catalog is None:
+        parsed_entries, parsed_by_catalog = parse_catalogs()
+        if entries is None:
+            entries = parsed_entries
+        if by_catalog is None:
+            by_catalog = parsed_by_catalog
+
     cataloged_paths = set(entries.keys())
-    print(f"Found cataloged entries: {len(cataloged_paths)}")
+    missing_from_catalog = sorted([f for f in tracked_files if f not in cataloged_paths])
+    stale_paths = sorted([f for f in cataloged_paths if not (REPO_ROOT / f).exists()])
 
-    # Detect uncataloged
-    missing_from_catalog = [f for f in tracked_files if f not in cataloged_paths]
-    # Detect stale catalog paths
-    stale_paths = [f for f in cataloged_paths if not (REPO_ROOT / f).exists()]
+    has_errors = bool(missing_from_catalog or stale_paths)
+    generated_content = generate_master_index(entries, by_catalog)
+
+    output_lines = [
+        "=== StudyAI Codebase Index Synchronization ===",
+        f"Discovered relevant source files: {len(tracked_files)}",
+        f"Found cataloged entries: {len(cataloged_paths)}"
+    ]
 
     if missing_from_catalog:
-        print(f"\n[WARNING] Found {len(missing_from_catalog)} source file(s) not in any catalog:")
+        output_lines.append(f"\n[FAIL] Found {len(missing_from_catalog)} source file(s) not in any catalog:")
         for m in missing_from_catalog[:10]:
-            print(f"  + {m}")
+            output_lines.append(f"  + {m}")
         if len(missing_from_catalog) > 10:
-            print(f"  ... and {len(missing_from_catalog) - 10} more.")
+            output_lines.append(f"  ... and {len(missing_from_catalog) - 10} more.")
 
     if stale_paths:
-        print(f"\n[WARNING] Found {len(stale_paths)} catalog entry(ies) referencing non-existent files:")
+        output_lines.append(f"\n[FAIL] Found {len(stale_paths)} catalog entry(ies) referencing non-existent files:")
         for s in stale_paths:
-            print(f"  - {s}")
-
-    content = generate_master_index(entries, by_catalog)
+            output_lines.append(f"  - {s}")
 
     if check_only:
-        if MASTER_INDEX_PATH.exists():
-            existing = MASTER_INDEX_PATH.read_text(encoding="utf-8")
-            if existing == content and not missing_from_catalog and not stale_paths:
-                print("\n[SUCCESS] Codebase file index is perfectly synchronized.")
-                sys.exit(0)
-            else:
-                print("\n[FAIL] Codebase file index is out of date or has uncataloged files.")
-                sys.exit(1)
-        else:
-            print(f"\n[FAIL] Master index does not exist at {MASTER_INDEX_PATH}")
-            sys.exit(1)
+        if has_errors:
+            output_lines.append("\n[FAIL] Codebase file index validation failed (uncataloged or stale files exist).")
+            return 1, "\n".join(output_lines)
 
-    MASTER_INDEX_PATH.write_text(content, encoding="utf-8")
-    print(f"\n[SUCCESS] Master index updated at: {MASTER_INDEX_PATH.relative_to(REPO_ROOT)}")
+        if not MASTER_INDEX_PATH.exists():
+            output_lines.append(f"\n[FAIL] Master index does not exist at {MASTER_INDEX_PATH}")
+            return 1, "\n".join(output_lines)
+
+        existing = MASTER_INDEX_PATH.read_text(encoding="utf-8")
+        if existing != generated_content:
+            output_lines.append("\n[FAIL] Master index FILE_INDEX.md is out of date.")
+            return 1, "\n".join(output_lines)
+
+        output_lines.append("\n[SUCCESS] Codebase file index is perfectly synchronized.")
+        return 0, "\n".join(output_lines)
+
+    # Sync mode (not check_only)
+    if has_errors and not allow_repair:
+        output_lines.append("\n[FAIL] Synchronization halted: uncataloged files or stale entries detected.")
+        output_lines.append("Add missing files to catalog or use --repair to force rewriting FILE_INDEX.md.")
+        return 1, "\n".join(output_lines)
+
+    if not dry_run:
+        MASTER_INDEX_PATH.parent.mkdir(parents=True, exist_ok=True)
+        MASTER_INDEX_PATH.write_text(generated_content, encoding="utf-8")
+
+    output_lines.append(f"\n[SUCCESS] Master index updated at: {MASTER_INDEX_PATH}")
+    return 0, "\n".join(output_lines)
+
+
+def main():
+    check_only = "--check" in sys.argv
+    allow_repair = "--repair" in sys.argv
+
+    code, msg = run_sync(check_only=check_only, allow_repair=allow_repair)
+    print(msg)
+    sys.exit(code)
 
 
 if __name__ == "__main__":

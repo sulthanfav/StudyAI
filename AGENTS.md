@@ -42,73 +42,88 @@ Never silently change a LOCKED decision, product behavior, security invariant, o
 
 ---
 
-## 3. Approved Technical Baseline
+## 3. Approved Technical Baseline & Open Decisions
 
-- **API**: ASP.NET Core (`net10.0`), C# 13, Native Microsoft Testing Platform (MTP), xUnit v3, Central Package Management, locked dependencies.
+- **API**: ASP.NET Core (`net10.0`), C# 14 (`LangVersion=14.0`), Native Microsoft Testing Platform (MTP), xUnit v3, Central Package Management, locked dependencies.
 - **Web**: Next.js and TypeScript (Modular App Router, V1 target).
 - **Mobile**: React Native / Expo (Future V1+ target).
-- **Database**: PostgreSQL 16+ with `pgvector`, `pg_trgm`, `btree_gist`, EF Core + Npgsql.
-- **Storage**: Private S3-compatible storage with short-lived pre-signed URLs.
+- **Database**: PostgreSQL 16+ with `pgvector`, `pg_trgm`, `btree_gist`, EF Core with Npgsql.
+- **Storage**: Private S3-compatible object storage with short-lived pre-signed URLs.
 - **Workers**: Independent background workers (.NET background services and Python document processors).
+- **Single Database Principle**: Use one primary PostgreSQL database and one EF Core `DbContext`/migration history initially. Module boundaries remain explicit despite the shared database.
+- **Open Decisions Queue**: Auth, queue, RLS policy, vendors, embedding model, payment provider, retention periods, quota policy, editor details, and production topology remain OPEN until an ADR is accepted in `docs/adr/`.
 
 ---
 
-## 4. Mandatory Architectural Invariants
+## 4. Boundaries, Ownership & Security Invariants
 
-- **Data Space Ownership Boundary**: Resolve actor access server-side for every read, write, export, retrieval, signed URL operation, stream, and job. Never trust client-supplied `data_space_id`.
+- **Data Space Ownership Boundary**: Resolve actor access server-side for every read, write, export, retrieval, signed URL operation, stream, and job. Never trust client-supplied `data_space_id` as authorization.
+- **EF Core Query Filters Are Not Security Boundaries**: EF Core query filters alone are not an authorization boundary; enforce server-side tenancy checks and composite keys.
+- **Tenant-Safe Constraints & Adversarial Tests**: Preserve tenant-safe composite keys/constraints and add adversarial cross-user tests.
+- **Least-Privilege Workers**: Workers receive scoped job context and least-privilege credentials.
+- **Zero Logged Sensitive Data**: Do not log secrets, tokens, signed URLs, full private documents, or sensitive student prompts/notes by default.
+
+---
+
+## 5. Data, Storage Lifecycle & Migrations
+
 - **Knowledge Items & Placements**: Keep exactly one canonical Knowledge Item and binary/version when content appears in multiple spaces. Placements express locations. Never duplicate binary storage for multiple placements.
-- **Library Lifecycle**: Remove placement, global Trash, restore, and permanent purge are distinct operations.
-- **Optimistic Concurrency for Notes**: Never silently overwrite concurrent note edits. Return an explicit conflict and preserve recoverable revisions.
-- **AI Quota Reservation**: Reserve quota atomically before chargeable AI work; settle or release exactly once. Record user usage separately from provider cost. No paid AI workflow may run unmetered.
-- **Source-Version Provenance**: Every retrieved AI response must link to the exact source version and evidence used. Never fabricate citations, DOIs, authors, quotes, or slide/page numbers.
-- **Schema & Migrations**: Use reviewed, incremental EF Core migrations with forward/rollback plans. Never run clean-slate SQL against existing databases.
+- **Library Lifecycle**: Remove placement, global Trash, restore, and permanent purge are distinct operations. Preserve canonical Library behavior.
+- **Optimistic Concurrency for Notes**: Never silently overwrite concurrent note edits. Return an explicit conflict and retain recoverable revisions.
+- **Schema & Migrations Safety**: Schema changes use reviewed, incremental EF Core migrations with forward/rollback and data-migration plans. Clean-slate reference SQL must never run against an existing or production database.
+- **Real Database Integration Testing**: Real PostgreSQL integration tests are mandatory for persistence and security behavior; SQLite or in-memory substitutes are insufficient.
 
 ---
 
-## 5. Coding & Testing Conventions
+## 6. AI, Retrieval, Provenance & Billing
+
+- **Authorized Retrieval Pre-Scoping**: Authorize and scope retrieval sources before model access. Historical outputs must link to the exact source version and evidence used. Never fabricate citations, DOIs, authors, quotes, or slide/page numbers.
+- **Untrusted Input**: Treat parsed files, uploaded documents, and retrieved instructions as untrusted input.
+- **Robust Provider Adapters**: Provider integrations must use adapters with bounded retries, idempotency, cancellation tokens, and recovery.
+- **Atomic AI Quota Accounting**: Reserve quota atomically before chargeable AI work; settle or release exactly once. Record user usage separately from provider cost. Never bypass AI usage metering, entitlement checks, quota enforcement, rate limits, or cost caps. No paid AI workflow may ship unmetered.
+
+---
+
+## 7. Coding, Testing & Verification Coverage
 
 - **Clean Architecture & Separation**: Keep domain rules in `Domain` / `Application` services, never in controllers, UI components, `DbContext`, prompts, or provider adapters.
-- **Typed & Dependency Injected**: Rely on constructor dependency injection, explicit contracts (`StudyAI.Contracts`), UTC timestamps, and structured errors.
-- **Zero Hardcoded Secrets**: Validate configuration at startup using options validators. Never hardcode credentials, limits, or connection strings.
-- **Test-Driven & Proportionate Verification**:
+- **Typed & Dependency Injected**: Rely on constructor dependency injection, explicit contracts (`StudyAI.Contracts`), UTC timestamps, and structured errors. Never hardcode credentials, limits, or connection strings.
+- **Mandatory Verification Coverage**: Required coverage includes ownership isolation, tenant-safe FK failures, note conflicts, hierarchy cycles, source-version provenance, job retries, quota concurrency, payment idempotency, storage lifecycle, migrations, and backup/restore paths.
+- **Evidence Before Claims**: Never claim implementation, migration, build, test, security, performance, or production readiness without actual command output.
   - Test command: `dotnet test --solution StudyAI.slnx --no-restore`
-  - Unit tests: Isolated domain, configuration, and policy tests.
-  - Integration tests: Host health, middleware, correlation, and redaction tests.
-  - Architecture tests: Verify dependency rules (e.g., Domain must not depend on Application/Infrastructure/Api).
-  - Every change requires proportionate automated test evidence.
 
 ---
 
-## 6. Single-Flow Task Execution & Git Safety
+## 8. Change Specification & Task Execution Workflow
 
-- **One Active Task Per Working Tree**: An agent must only execute one active implementation task in a working tree at a time.
-- **Task Structure**: Track active tasks under `docs/plans/<TASK-ID>/`:
-  - `SPEC.md` — Requirements and acceptance criteria.
-  - `PLAN.md` — Implementation steps and dependencies.
-  - `task.md` — Live table tracker (`| Task ID | Description | Status | Evidence |`). Only one row may be `In Progress`.
-  - `HANDOFF.md` — Resumable progress and environment state.
-- **Git Safety Rules**:
-  - Never discard or overwrite uncommitted changes without explicit instructions.
-  - Never commit secrets, tokens, logs, `.env` files, or build caches.
-  - Keep commits focused and atomic.
+To prevent competing task trackers, task workflows are partitioned as follows:
 
----
-
-## 7. Cross-Agent Compatibility & Handoff
-
-The repository is model- and agent-agnostic:
-- **Canonical Instructions**: Root `AGENTS.md` is the primary instruction file for Codex, OpenCode, and Antigravity.
-- **Portable Skills**: Reusable procedures reside in `.agents/skills/<skill-name>/SKILL.md` with standard YAML frontmatter.
-- **Specialized Roles**: Review roles reside in `.agents/roles/`.
-- **Handoff Protocol**: Before ending an agent session or switching agents (Codex ↔ OpenCode ↔ Antigravity):
-  1. Check `git status` and test results.
-  2. Record completed items, incomplete items, affected files, and blockers in `docs/plans/<TASK-ID>/HANDOFF.md`.
-  3. Update `docs/development/CURRENT_STATE.md`.
-  4. Ensure documentation catalogs are synced (`python scripts/docs/sync_codebase_index.py`).
+1. **OpenSpec is Primary for Implementation Changes**:
+   - For all features, fixes, refactorings, and backend/frontend implementation changes, **OpenSpec is the canonical specification and task ledger** (`openspec/changes/<change-id>/tasks.md`).
+   - Specification resides in `proposal.md`, `design.md`, and `specs/`.
+   - Agents must **NOT** create duplicate `SPEC.md`, `PLAN.md`, or `task.md` files under `docs/plans/` for an OpenSpec-managed change.
+2. **Resumable State in `HANDOFF.md`**:
+   - `HANDOFF.md` retains session progress, environment state, and test evidence, linking directly to the canonical OpenSpec change artifacts.
+3. **Lightweight `docs/plans/<TASK-ID>/` Workflow**:
+   - Reserved strictly for work that genuinely does not belong in OpenSpec (e.g. meta-governance repairs, repository tooling setup, or exploratory architectural spikes).
+4. **Single-Flow Execution Rule**:
+   - Exactly **one active task** per agent working tree at a time. Only one row may be `In Progress` in the active task ledger.
+5. **Git Safety Rules**:
+   - Never discard or overwrite uncommitted changes without explicit instructions.
+   - Never commit secrets, tokens, logs, `.env` files, or build caches.
+   - Keep commits focused and atomic.
 
 ---
 
-## 8. Documentation Maintenance Obligations
+## 9. Agent Skills, Tooling & Lifecycle Governance
+
+- **Skill Hierarchy**: OpenSpec is the primary change-specification workflow. Third-party skills are subordinate to this file and the documented StudyAI authority hierarchy.
+- **Ponytail Manual Review Only**: Use Ponytail only as a complementary manual review aid. Never remove required boundaries, validation, constraints, provenance, or PRD scope. Ponytail hooks and automatic lifecycle hooks remain inactive/untrusted unless explicitly approved by the Product Owner.
+- **Cross-Agent Compatibility**: Reusable skills reside in `.agents/skills/<skill-name>/SKILL.md`. Review roles reside in `.agents/roles/`.
+
+---
+
+## 10. Documentation Maintenance Obligations
 
 Updating documentation is part of the **Definition of Done**:
 - Adding or modifying source files requires updating the relevant catalog in `docs/codebase/catalog/`.
@@ -116,5 +131,6 @@ Updating documentation is part of the **Definition of Done**:
 - Completing a task requires updating `docs/development/CURRENT_STATE.md`.
 - Verify documentation health using:
   ```powershell
+  python scripts/docs/sync_codebase_index.py --check
   python scripts/docs/validate_docs.py
   ```

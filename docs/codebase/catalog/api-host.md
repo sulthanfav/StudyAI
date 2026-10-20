@@ -132,12 +132,12 @@ Status: **VERIFIED**
 ### `apps/api/StudyAI.Api/Properties/launchSettings.json`
 - **Module**: `apps/api/StudyAI.Api`
 - **Category**: Configuration (Debug Profiles)
-- **Responsibility**: Local developer launch profiles defining endpoints (`http://localhost:5001`, `https://localhost:7001`).
+- **Responsibility**: Local developer launch profile defining host endpoint (`http://localhost:5080`).
 - **Public Interfaces / Exports**: Launch settings profile.
 - **Dependencies**: None.
 - **Known Callers**: .NET CLI and IDE debug runners.
 - **Associated Tests**: `HealthEndpointTests.cs`.
-- **Security / Architectural Notes**: Local loopback bindings only.
+- **Security / Architectural Notes**: Local loopback binding only.
 - **Verification Status**: `VERIFIED`
 
 ### `apps/api/StudyAI.Api/packages.lock.json`

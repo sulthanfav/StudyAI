@@ -31,13 +31,19 @@ Use this skill to update repository documentation and verify catalog integrity a
 
 ## Tooling Commands
 
-### 1. Synchronize Codebase Index
+### 1. Check Codebase Index Synchronization (Safe Check)
+```powershell
+python scripts/docs/sync_codebase_index.py --check
+```
+Exits nonzero if uncataloged source/.csproj files exist, stale entries exist, or `FILE_INDEX.md` is out of date.
+
+### 2. Synchronize Codebase Index (Update Mode)
 ```powershell
 python scripts/docs/sync_codebase_index.py
 ```
-This discovers tracked files, checks for missing catalog entries, and regenerates `docs/codebase/FILE_INDEX.md`.
+Discovers tracked source and project files, checks for missing catalog entries, and regenerates `docs/codebase/FILE_INDEX.md`. Fails safely without modifying the index if uncataloged files are detected (use `--repair` only if forcing update).
 
-### 2. Validate Documentation Integrity
+### 3. Validate Documentation Integrity
 ```powershell
 python scripts/docs/validate_docs.py
 ```

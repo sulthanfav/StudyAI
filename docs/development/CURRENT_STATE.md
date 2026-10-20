@@ -11,8 +11,8 @@ Navigation: [`docs/START_HERE.md`](../START_HERE.md) | [`SYSTEM_MAP.md`](../../S
 
 | Task Identifier | Title / Scope | Owning Agent | Status | Next Immediate Step |
 |---|---|---|---|---|
-| **AI-ARCH-v2.0** | Multi-Agent Engineering & Codebase Intelligence v2.0 | Antigravity | Completed | Task completed. System validated. |
-| **BACKEND-FOUNDATION-01** | Modular Monolith Backend Foundation Iteration 1 | Completed | Done | Awaiting Iteration 2 (EF Core & PostgreSQL migration) |
+| **AI-ARCH-v2.0** | Multi-Agent Engineering & Codebase Intelligence v2.0 | Antigravity | Completed | Governance and tooling repaired & validated. |
+| **BACKEND-FOUNDATION-01** | Modular Monolith Backend Foundation Iteration 1 | Codex | Completed | Awaiting Iteration 2 (EF Core & PostgreSQL migration) |
 
 ---
 
@@ -46,7 +46,7 @@ Navigation: [`docs/START_HERE.md`](../START_HERE.md) | [`SYSTEM_MAP.md`](../../S
 
 ## 4. Environment & Health Summary
 
-- **.NET SDK**: `10.0.300` (pinned via `global.json`).
+- **.NET SDK**: `10.0.300` (pinned via `global.json`), C# 14 (`LangVersion=14.0`).
 - **Test Framework**: Native Microsoft Testing Platform (MTP) with xUnit v3 (`dotnet test --solution StudyAI.slnx --no-restore`).
 - **Python Runtime**: `3.8.10` (used for documentation tooling in `scripts/docs/`).
 - **Docker Compose**: `infra/compose/compose.database.yml` ready for PostgreSQL 16.

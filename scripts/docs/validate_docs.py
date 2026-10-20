@@ -146,47 +146,52 @@ def check_skill_frontmatter(reporter: ValidationReporter):
         else:
             valid_count += 1
 
-    if valid_count == len(skill_files):
+    if valid_count == len(skill_files) and reporter.is_healthy():
         reporter.add_pass(f"All {valid_count} skills have valid YAML frontmatter.")
 
 
-def check_markdown_links(reporter: ValidationReporter):
-    """Verify relative markdown links resolve to existing files."""
+def validate_links_in_file(file_path: Path, doc_rel: str, reporter: ValidationReporter) -> int:
+    """Verifies that all relative markdown links in a file resolve to existing targets."""
     link_pattern = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
-    broken_links = []
-    checked_links_count = 0
+    checked = 0
+    if not file_path.is_file():
+        return 0
+
+    content = file_path.read_text(encoding="utf-8")
+    doc_parent = file_path.parent
+
+    for m in link_pattern.finditer(content):
+        url = m.group(2).strip()
+
+        # Skip external or non-file URLs
+        if url.startswith(("http://", "https://", "mailto:", "ftp:")):
+            continue
+
+        # Strip anchor
+        file_part = url.split("#")[0].strip()
+        if not file_part:
+            continue
+
+        checked += 1
+        target = (doc_parent / file_part).resolve()
+        if not target.exists():
+            reporter.add_error(f"Broken link in '{doc_rel}': '{url}' -> target '{file_part}' does not exist.")
+
+    return checked
+
+
+def check_markdown_links(reporter: ValidationReporter):
+    """Verify relative markdown links resolve across core documentation."""
+    total_checked = 0
+    initial_errors = len(reporter.errors)
 
     for doc_rel in CORE_DOCS_FOR_LINKS:
         doc_path = REPO_ROOT / doc_rel
-        if not doc_path.is_file():
-            continue
+        if doc_path.is_file():
+            total_checked += validate_links_in_file(doc_path, doc_rel, reporter)
 
-        content = doc_path.read_text(encoding="utf-8")
-        doc_parent = doc_path.parent
-
-        for m in link_pattern.finditer(content):
-            url = m.group(2).strip()
-
-            # Skip external or non-file URLs
-            if url.startswith(("http://", "https://", "mailto:", "ftp:")):
-                continue
-
-            # Strip anchor
-            file_part = url.split("#")[0].strip()
-            if not file_part:
-                continue  # Local anchor link (#section)
-
-            checked_links_count += 1
-            # Resolve relative to current doc
-            target = (doc_parent / file_part).resolve()
-            if not target.exists():
-                broken_links.append((doc_rel, url, file_part))
-
-    if broken_links:
-        for source_doc, raw_link, missing_target in broken_links:
-            reporter.add_error(f"Broken link in '{source_doc}': '{raw_link}' -> target '{missing_target}' does not exist.")
-    else:
-        reporter.add_pass(f"All {checked_links_count} checked relative markdown links resolve successfully.")
+    if len(reporter.errors) == initial_errors:
+        reporter.add_pass(f"All {total_checked} checked relative markdown links resolve successfully.")
 
 
 def main():
