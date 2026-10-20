@@ -1,6 +1,6 @@
 # StudyAI Documentation Index
 
-Last reviewed: 2026-10-19.
+Last reviewed: 2026-10-20.
 
 ## How authority works
 
@@ -57,6 +57,16 @@ If a lower-ranked document conflicts with a higher-ranked source, stop, record t
 | [ADR-015_BACKEND_FOUNDATION_TOOLCHAIN.md](adr/ADR-015_BACKEND_FOUNDATION_TOOLCHAIN.md) | Accepts the .NET 10 SDK feature band, native Microsoft Testing Platform, xUnit v3, central package pins, and NuGet lock policy for Backend Foundation Iteration 1 only. | ACCEPTED. |
 | [ADR-016_PERSISTENCE_AND_MIGRATION_STRATEGY.md](adr/ADR-016_PERSISTENCE_AND_MIGRATION_STRATEGY.md) | Accepts single primary DbContext, EF Core 10 + Npgsql + pgvector, CPM pins, hybrid EF/raw SQL incremental migrations, and parity verification. | ACCEPTED. |
 | [AI_ARCHITECTURE.md](plans/AI_ARCHITECTURE.md) | Multi-Agent Engineering & Codebase Intelligence System v2.0 blueprint defining universal operating contracts, living system map, file catalogs, and cross-agent handoff. | IMPLEMENTED baseline for developer experience and agent coordination. |
+
+## Design documents
+
+| Document | Purpose | Status |
+|---|---|---|
+| [UI_REFERENCE_RESEARCH.md](design/UI_REFERENCE_RESEARCH.md) | Reviews verified product references and extracts applicable navigation, hierarchy, reading, knowledge-organization, learning, responsive, and accessibility lessons. | DRAFT; inspiration only, pending Product Owner approval. |
+| [DESIGN_DIRECTIONS.md](design/DESIGN_DIRECTIONS.md) | Proposes three visual directions—Ruang Studi, Campus Grid, and Evidence Atelier—and recommends Ruang Studi for Iteration 5. | DRAFT; no direction is approved yet. |
+| [DESIGN_SYSTEM.md](design/DESIGN_SYSTEM.md) | Defines candidate semantic tokens, accessible component foundation, responsive rules, states, and cross-platform boundaries. | DRAFT; no UI library or token set is approved or installed. |
+| [UI_UX_GUIDELINES.md](design/UI_UX_GUIDELINES.md) | Defines proposed information architecture, initial Workspace flows, lifecycle language, contextual AI behavior, and accessibility floor. | DRAFT; unresolved product policies remain explicitly blocked. |
+| [FRONTEND_SKILLS_RESEARCH.md](design/FRONTEND_SKILLS_RESEARCH.md) | Reviews four upstream UI agent-skill options, their scripts/hooks/network behavior, overlap, compatibility, risks, and staged recommendation. | DRAFT research; no skill or hook was installed. |
 
 ## Multi-Agent & Codebase Intelligence documents
 
