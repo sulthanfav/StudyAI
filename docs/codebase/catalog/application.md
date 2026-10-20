@@ -24,3 +24,72 @@ Status: **VERIFIED**
 - **Category**: Configuration (Lockfile)
 - **Responsibility**: NuGet package lockfile ensuring deterministic dependency resolution.
 - **Verification Status**: `VERIFIED`
+
+### `src/StudyAI.Application/Common/Interfaces/IApplicationDbContext.cs`
+- **Module**: `src/StudyAI.Application`
+- **Category**: Service Contract / Interface
+- **Responsibility**: Abstract persistence gateway providing `IQueryable<T>` for application use cases.
+- **Public Interfaces / Exports**: `IApplicationDbContext` interface.
+- **Dependencies**: `StudyAI.Domain`.
+- **Known Callers**: Application use cases, API controllers.
+- **Associated Tests**: `DatabaseSecurityAndIsolationTests.cs`.
+- **Security / Architectural Notes**: Keeps Application layer independent of Entity Framework Core implementation details.
+- **Verification Status**: `VERIFIED`
+
+### `src/StudyAI.Application/Common/Interfaces/ICurrentDataSpaceAccessor.cs`
+- **Module**: `src/StudyAI.Application`
+- **Category**: Service Contract / Interface
+- **Responsibility**: Mutable accessor contract for resolving and mutating the active tenant scope.
+- **Public Interfaces / Exports**: `ICurrentDataSpaceAccessor` interface.
+- **Dependencies**: `ICurrentDataSpaceContext`.
+- **Known Callers**: Authentication middleware, background job runners, unit test fixtures.
+- **Associated Tests**: `DatabaseSecurityAndIsolationTests.cs`.
+- **Security / Architectural Notes**: Tenant ID must only be set after server-side authentication and authorization.
+- **Verification Status**: `VERIFIED`
+
+### `src/StudyAI.Application/Common/Interfaces/ICurrentDataSpaceContext.cs`
+- **Module**: `src/StudyAI.Application`
+- **Category**: Service Contract / Interface
+- **Responsibility**: Read-only tenant context interface providing `CurrentDataSpaceId`.
+- **Public Interfaces / Exports**: `ICurrentDataSpaceContext` interface.
+- **Dependencies**: None.
+- **Known Callers**: `TenantSessionInterceptor`, domain services, query handlers.
+- **Associated Tests**: `DatabaseSecurityAndIsolationTests.cs`.
+- **Security / Architectural Notes**: Safe read-only view of active tenant scope.
+- **Verification Status**: `VERIFIED`
+
+### `src/StudyAI.Application/Auth/IAuthService.cs`
+- **Module**: `src/StudyAI.Application`
+- **Category**: Service Contract / Interface
+- **Responsibility**: Application interface for user registration, authentication, logout, and session queries.
+- **Verification Status**: `VERIFIED`
+
+### `src/StudyAI.Application/Auth/Models/LoginCommand.cs`
+- **Module**: `src/StudyAI.Application`
+- **Category**: Command Model
+- **Responsibility**: Application command carrying user credentials for authentication.
+- **Verification Status**: `VERIFIED`
+
+### `src/StudyAI.Application/Auth/Models/LoginResult.cs`
+- **Module**: `src/StudyAI.Application`
+- **Category**: Result Model
+- **Responsibility**: Authentication result containing success/failure status, lockout flags, and user summary.
+- **Verification Status**: `VERIFIED`
+
+### `src/StudyAI.Application/Auth/Models/RegisterCommand.cs`
+- **Module**: `src/StudyAI.Application`
+- **Category**: Command Model
+- **Responsibility**: Application command carrying user registration input.
+- **Verification Status**: `VERIFIED`
+
+### `src/StudyAI.Application/Auth/Models/RegisterResult.cs`
+- **Module**: `src/StudyAI.Application`
+- **Category**: Result Model
+- **Responsibility**: Result of user and default data space provisioning.
+- **Verification Status**: `VERIFIED`
+
+### `src/StudyAI.Application/Common/Interfaces/IDataSpaceAuthorizationService.cs`
+- **Module**: `src/StudyAI.Application`
+- **Category**: Service Contract / Interface
+- **Responsibility**: Server-side authorization contract verifying actor membership in a Data Space.
+- **Verification Status**: `VERIFIED`

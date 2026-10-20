@@ -15,9 +15,9 @@ This file does not approve a choice. It consolidates the OPEN items in the final
 
 | ID | Decision | Must be resolved | Source mapping |
 |---|---|---|---|
-| ADR-001 | Authentication and session architecture | Before Phase 2 account/identity migrations | PRD OD-01; Architecture OPEN-05; Review ADR-AUTH/DBR-16; Handbook DB-ADR-001 |
+| ADR-001 | [Authentication and session architecture](ADR-001_AUTHENTICATION_AND_SESSION_ARCHITECTURE.md) | **ACCEPTED** (2026-10-20) | PRD OD-01; Architecture OPEN-05; Review ADR-AUTH/DBR-16 |
 | ADR-002 | Background jobs, scheduler, queue, leasing, retries, and outbox boundary | Before Phase 2 durable dispatch and before Phase 4 processing | PRD OD-02; Architecture OPEN-06; Review ADR-QUEUE; Handbook DB-ADR-008 |
-| ADR-003 | PostgreSQL RLS, runtime roles, pooled connection context, and worker isolation | Trial in Phase 1; accepted production design before external user data | PRD OD-04; Architecture OPEN-09; Review ADR-RLS/DBR-10; Handbook DB-ADR-007 |
+| ADR-003 | [PostgreSQL RLS, runtime roles, pooled connection context](ADR-003_POSTGRESQL_ROLES_AND_ROW_LEVEL_SECURITY.md) | **ACCEPTED** (2026-10-20) | PRD OD-04; Architecture OPEN-09; Review ADR-RLS/DBR-10 |
 | ADR-004 | Document/object storage provider, upload protocol, quota bytes, version retention, Trash/purge, and backup retention | Before Phase 3 attachments and Phase 4 public upload | PRD OD-07; Architecture OPEN-10/12; Review ADR-STORAGE; Handbook DB-ADR-011 |
 | ADR-005 | AI provider gateway, model routing, failure policy, data handling, and budget caps | Before Phase 5 AI implementation; evaluation starts in Phase 4 | PRD OD-08; Architecture OPEN-12/15; PRD PLT-06/09 |
 | ADR-006 | Embedding model/dimensions, Indonesian/English evaluation, FTS/hybrid scoring, reranking, and ANN policy | Before Phase 4 retrieval quality sign-off | PRD OD-05; Architecture OPEN-07/08; Review ADR-EMBED/DBR-14; Handbook DB-ADR-006/014 |

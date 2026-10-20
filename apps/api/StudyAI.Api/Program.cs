@@ -3,7 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using StudyAI.Api.Composition;
 using StudyAI.Api.Diagnostics;
+using StudyAI.Api.Endpoints;
 using StudyAI.Api.Health;
+
+using StudyAI.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,11 +18,16 @@ builder.Logging.AddJsonConsole(options =>
     options.TimestampFormat = "yyyy-MM-ddTHH:mm:ss.fffZ";
 });
 builder.Services.AddStudyAIFoundation(builder.Configuration);
+builder.Services.AddInfrastructurePersistence(builder.Configuration);
+builder.Services.AddStudyAIAuth(builder.Configuration);
 
 var app = builder.Build();
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseExceptionHandler();
+app.UseAuthentication();
+app.UseAuthorization();
+app.UseAntiforgery();
 app.UseStatusCodePages(async statusCodeContext =>
 {
     var httpContext = statusCodeContext.HttpContext;
@@ -53,6 +61,9 @@ app.MapGet("/health/ready", FoundationHealthEndpoints.GetReadinessAsync)
     .WithDescription("Returns safe component names and states without configuration values or exception details.")
     .Produces(StatusCodes.Status200OK, contentType: "application/json")
     .Produces(StatusCodes.Status503ServiceUnavailable, contentType: "application/json");
+
+app.MapAuthEndpoints();
+app.MapDataSpaceEndpoints();
 
 app.Run();
 

@@ -66,6 +66,18 @@ Status: **VERIFIED**
 - **Responsibility**: Runtime SQL script that verifies PostgreSQL extensions, tables, indices, and smoke test constraints.
 - **Verification Status**: `VERIFIED`
 
+### `infra/postgres/tenant-poc-setup.sql`
+- **Module**: `infra/`
+- **Category**: Script (SQL PoC Setup)
+- **Responsibility**: Scaffolds isolated roles (`studyai_migrator`, `studyai_app`, `studyai_worker`, `studyai_ro`), grants, RLS policies, and seed data for tenant isolation testing.
+- **Verification Status**: `VERIFIED`
+
+### `infra/postgres/concurrency-poc-setup.sql`
+- **Module**: `infra/`
+- **Category**: Script (SQL Concurrency Setup)
+- **Responsibility**: Seeds notes, quota balances, document versions, plans, and subscriptions for real multi-session concurrency testing.
+- **Verification Status**: `VERIFIED`
+
 ---
 
 ## 3. Automation Scripts (`scripts/`)
@@ -74,6 +86,36 @@ Status: **VERIFIED**
 - **Module**: `scripts/`
 - **Category**: Script (Automation Runner)
 - **Responsibility**: Cross-platform PowerShell automation script to spin up the local PostgreSQL container, apply schema, run smoke tests, verify dump/restore, and tear down.
+- **Verification Status**: `VERIFIED`
+
+### `scripts/Test-TenantIsolationPoC.ps1`
+- **Module**: `scripts/`
+- **Category**: Script (Test Runner)
+- **Responsibility**: Executes 10 tenant isolation, role permission boundary, pooled connection reuse, and fail-closed security scenarios against PostgreSQL.
+- **Verification Status**: `VERIFIED`
+
+### `scripts/Test-ConcurrencyInvariants.ps1`
+- **Module**: `scripts/`
+- **Category**: Script (Test Runner)
+- **Responsibility**: Executes real multi-session concurrent operations for note edits, atomic quota allocations, duplicate processing runs, and subscription exclusion.
+- **Verification Status**: `VERIFIED`
+
+### `scripts/Verify-SchemaParity.ps1`
+- **Module**: `scripts/`
+- **Category**: Script (Verification Runner)
+- **Responsibility**: Asserts catalog parity across all 14 schemas, 68 tables, primary keys, GiST constraints, triggers, and pgvector types against canonical SQL v1.1.
+- **Verification Status**: `VERIFIED`
+
+### `scripts/Verify-PersistenceSubsetParity.ps1`
+- **Module**: `scripts/`
+- **Category**: Script (Verification Runner)
+- **Responsibility**: Verifies 8 schema parity checks on the 11-table persistence subset, RLS policies, immutability triggers, and pgvector types.
+- **Verification Status**: `VERIFIED`
+
+### `.config/dotnet-tools.json`
+- **Module**: `root`
+- **Category**: Configuration (Local .NET Tools)
+- **Responsibility**: Local dotnet tool manifest pinning `dotnet-ef` CLI tooling for migrations.
 - **Verification Status**: `VERIFIED`
 
 ### `scripts/docs/sync_codebase_index.py`
@@ -87,3 +129,4 @@ Status: **VERIFIED**
 - **Category**: Script (Validation & CI)
 - **Responsibility**: Validates documentation links, catalog path integrity, skill frontmatter, and reports documentation coverage with non-zero exit on failure.
 - **Verification Status**: `VERIFIED`
+

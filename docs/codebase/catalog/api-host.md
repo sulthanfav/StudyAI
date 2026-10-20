@@ -156,3 +156,27 @@ Status: **VERIFIED**
 - **Associated Tests**: `HealthEndpointTests.cs`.
 - **Security / Architectural Notes**: Safe endpoints only.
 - **Verification Status**: `VERIFIED`
+
+### `apps/api/StudyAI.Api/Composition/AuthServiceCollectionExtensions.cs`
+- **Module**: `apps/api/StudyAI.Api`
+- **Category**: DI Composition / Configuration
+- **Responsibility**: Configures ASP.NET Core Identity Core, cookie options, antiforgery, and authorization policies.
+- **Verification Status**: `VERIFIED`
+
+### `apps/api/StudyAI.Api/Endpoints/AuthEndpoints.cs`
+- **Module**: `apps/api/StudyAI.Api`
+- **Category**: API Endpoints / Minimal API
+- **Responsibility**: Maps `/api/v1/auth/register`, `/login`, `/logout`, `/me`, and `/csrf` endpoints.
+- **Verification Status**: `VERIFIED`
+
+### `apps/api/StudyAI.Api/Endpoints/DataSpaceEndpoints.cs`
+- **Module**: `apps/api/StudyAI.Api`
+- **Category**: API Endpoints / Minimal API
+- **Responsibility**: Maps `/api/v1/data-spaces/{id}/content-spaces` with server-side authorization filter.
+- **Verification Status**: `VERIFIED`
+
+### `apps/api/StudyAI.Api/Security/DataSpaceAuthorizationFilter.cs`
+- **Module**: `apps/api/StudyAI.Api`
+- **Category**: Security / Endpoint Filter
+- **Responsibility**: Validates authenticated actor membership in target Data Space and sets transaction-local RLS context.
+- **Verification Status**: `VERIFIED`

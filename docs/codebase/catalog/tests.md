@@ -113,6 +113,37 @@ Status: **VERIFIED**
 - **Responsibility**: In-memory test logger provider capturing structured log entries for assertion.
 - **Verification Status**: `VERIFIED`
 
+### `tests/StudyAI.Api.IntegrationTests/Persistence/PersistenceFixture.cs`
+- **Module**: `tests/StudyAI.Api.IntegrationTests`
+- **Category**: Test Support
+- **Responsibility**: Integration test fixture managing admin/app connections, seed data, and DbContext creation.
+- **Verification Status**: `VERIFIED`
+
+### `tests/StudyAI.Api.IntegrationTests/Persistence/DatabaseSecurityAndIsolationTests.cs`
+- **Module**: `tests/StudyAI.Api.IntegrationTests`
+- **Category**: Test
+- **Responsibility**: 12 automated integration tests verifying PostgreSQL runtime role DDL denial, RLS tenant isolation, cross-tenant blocking, connection pooling safety, transaction cleanup, fail-closed invalid context, EF mappings, migration data preservation, and optimistic concurrency.
+- **Associated Code**: `src/StudyAI.Infrastructure/Persistence/StudyAIDbContext.cs`, `src/StudyAI.Infrastructure/Persistence/Interceptors/TenantSessionInterceptor.cs`.
+- **Verification Status**: `VERIFIED`
+
+### `tests/StudyAI.Api.IntegrationTests/Auth/UserRegistrationIntegrationTests.cs`
+- **Module**: `tests/StudyAI.Api.IntegrationTests`
+- **Category**: Test
+- **Responsibility**: Automated integration tests verifying atomic user registration, password policy, rollback on failure, and concurrency idempotency.
+- **Verification Status**: `VERIFIED`
+
+### `tests/StudyAI.Api.IntegrationTests/Auth/AuthenticationAndSessionIntegrationTests.cs`
+- **Module**: `tests/StudyAI.Api.IntegrationTests`
+- **Category**: Test
+- **Responsibility**: Automated integration tests verifying login, logout, cookie session lifecycle, account lockout, and antiforgery/CSRF validation.
+- **Verification Status**: `VERIFIED`
+
+### `tests/StudyAI.Api.IntegrationTests/Auth/DataSpaceAuthorizationIntegrationTests.cs`
+- **Module**: `tests/StudyAI.Api.IntegrationTests`
+- **Category**: Test
+- **Responsibility**: Automated integration tests verifying server-side Data Space ownership/membership authorization, cross-user denial, and multi-user isolation.
+- **Verification Status**: `VERIFIED`
+
 ---
 
 ## 4. Script Tests (`tests/scripts/`)

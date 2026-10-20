@@ -25,7 +25,17 @@ public sealed class ApiSurfaceTests
             .ToArray();
 
         Assert.Equal(
-            ["/health/live", "/health/ready", "/openapi/{documentName}.json"],
+            [
+                "/api/v1/auth/csrf",
+                "/api/v1/auth/login",
+                "/api/v1/auth/logout",
+                "/api/v1/auth/me",
+                "/api/v1/auth/register",
+                "/api/v1/data-spaces/{id:guid}/content-spaces",
+                "/health/live",
+                "/health/ready",
+                "/openapi/{documentName}.json"
+            ],
             routes);
     }
 

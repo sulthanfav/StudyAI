@@ -17,10 +17,13 @@ internal sealed class CapturingLoggerProvider : ILoggerProvider, ISupportExterna
     public void Dispose()
     {
     }
-
     private void Capture<TState>(TState state, Exception? exception, Func<TState, Exception?, string> formatter)
     {
         var parts = new List<string> { formatter(state, exception) };
+        if (exception != null)
+        {
+            parts.Add($"exception:{exception}");
+        }
         AppendProperties("state", state, parts);
         _scopeProvider.ForEachScope(
             (scope, target) => AppendProperties("scope", scope, target),

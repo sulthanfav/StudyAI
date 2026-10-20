@@ -65,9 +65,14 @@ Configuration is validated at startup. Default structured logs contain bounded c
 
 This host is not tenant-secure, database-ready, security-certified, performance-tested, or production-ready. Health success proves only that the foundation process and registered foundation checks are healthy.
 
-The 2026-10-19 foundation verification completed locked restore and a warning-free build, then ran 28 tests with 28 passed, 0 failed, and 0 skipped. Exact commands and scope limitations are recorded in [Backend Foundation — Iteration 1](docs/architecture/BACKEND_FOUNDATION.md).
+The foundation and persistence integration verification completed locked restore and a warning-free build, running 40 automated tests with 40 passed, 0 failed, and 0 skipped (including unit, architecture, API, PostgreSQL least-privilege, RLS tenant isolation, Npgsql connection-pooling, and optimistic concurrency tests). See [Persistence & Security Architecture — Iteration 3](docs/architecture/PERSISTENCE_AND_SECURITY_ARCHITECTURE.md).
+
+To run persistence subset parity verification:
+```powershell
+powershell -File scripts/Verify-PersistenceSubsetParity.ps1
+```
 
 ## Next milestone
 
-Resolve authentication/session design, runtime roles/RLS and pooled context, EF Core schema ownership and migration strategy, and the remaining Phase 1 concurrency/populated-upgrade evidence before implementing identity or tenant-sensitive persistence. Do not treat the clean-slate SQL as a production migration.
+Iteration 4: Authentication & Session Architecture (implementing approved ADR-001 with ASP.NET Core Identity, secure HttpOnly cookie web sessions, CSRF protections, explicit session revocation, and server-side Data Space authorization).
 
