@@ -5,6 +5,8 @@ param(
 )
 
 $ErrorActionPreference = 'Continue'
+$appPassword = $env:STUDYAI_TEST_APP_PASSWORD
+if ([string]::IsNullOrWhiteSpace($appPassword)) { throw 'STUDYAI_TEST_APP_PASSWORD is required.' }
 if (Test-Path variable:PSNativeCommandUseErrorActionPreference) {
     $PSNativeCommandUseErrorActionPreference = $false
 }
@@ -90,7 +92,7 @@ $j1 = Start-Job -ScriptBlock {
     param($c, $d, $sql)
     $tmp = [System.IO.Path]::GetTempFileName()
     [System.IO.File]::WriteAllText($tmp, $sql)
-    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=AppRuntimeSecret123! -i $c psql -U studyai_app -d $d 2>&1"
+    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=$using:appPassword -i $c psql -U studyai_app -d $d 2>&1"
     Remove-Item $tmp -Force
     $res
 } -ArgumentList $ContainerName, $DatabaseName, $sqlWorker1
@@ -99,7 +101,7 @@ $j2 = Start-Job -ScriptBlock {
     param($c, $d, $sql)
     $tmp = [System.IO.Path]::GetTempFileName()
     [System.IO.File]::WriteAllText($tmp, $sql)
-    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=AppRuntimeSecret123! -i $c psql -U studyai_app -d $d 2>&1"
+    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=$using:appPassword -i $c psql -U studyai_app -d $d 2>&1"
     Remove-Item $tmp -Force
     $res
 } -ArgumentList $ContainerName, $DatabaseName, $sqlWorker2
@@ -143,7 +145,7 @@ $j1 = Start-Job -ScriptBlock {
     param($c, $d, $sql)
     $tmp = [System.IO.Path]::GetTempFileName()
     [System.IO.File]::WriteAllText($tmp, $sql)
-    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=AppRuntimeSecret123! -i $c psql -U studyai_app -d $d -t -A 2>&1"
+    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=$using:appPassword -i $c psql -U studyai_app -d $d -t -A 2>&1"
     Remove-Item $tmp -Force
     $res
 } -ArgumentList $ContainerName, $DatabaseName, $sqlQuota1
@@ -152,7 +154,7 @@ $j2 = Start-Job -ScriptBlock {
     param($c, $d, $sql)
     $tmp = [System.IO.Path]::GetTempFileName()
     [System.IO.File]::WriteAllText($tmp, $sql)
-    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=AppRuntimeSecret123! -i $c psql -U studyai_app -d $d -t -A 2>&1"
+    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=$using:appPassword -i $c psql -U studyai_app -d $d -t -A 2>&1"
     Remove-Item $tmp -Force
     $res
 } -ArgumentList $ContainerName, $DatabaseName, $sqlQuota2
@@ -188,7 +190,7 @@ $j1 = Start-Job -ScriptBlock {
     param($c, $d, $sql)
     $tmp = [System.IO.Path]::GetTempFileName()
     [System.IO.File]::WriteAllText($tmp, $sql)
-    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=AppRuntimeSecret123! -i $c psql -U studyai_app -d $d 2>&1"
+    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=$using:appPassword -i $c psql -U studyai_app -d $d 2>&1"
     Remove-Item $tmp -Force
     $res
 } -ArgumentList $ContainerName, $DatabaseName, $sqlRun1
@@ -197,7 +199,7 @@ $j2 = Start-Job -ScriptBlock {
     param($c, $d, $sql)
     $tmp = [System.IO.Path]::GetTempFileName()
     [System.IO.File]::WriteAllText($tmp, $sql)
-    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=AppRuntimeSecret123! -i $c psql -U studyai_app -d $d 2>&1"
+    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=$using:appPassword -i $c psql -U studyai_app -d $d 2>&1"
     Remove-Item $tmp -Force
     $res
 } -ArgumentList $ContainerName, $DatabaseName, $sqlRun2
@@ -231,7 +233,7 @@ $j1 = Start-Job -ScriptBlock {
     param($c, $d, $sql)
     $tmp = [System.IO.Path]::GetTempFileName()
     [System.IO.File]::WriteAllText($tmp, $sql)
-    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=AppRuntimeSecret123! -i $c psql -U studyai_app -d $d 2>&1"
+    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=$using:appPassword -i $c psql -U studyai_app -d $d 2>&1"
     Remove-Item $tmp -Force
     $res
 } -ArgumentList $ContainerName, $DatabaseName, $sqlSub1
@@ -240,7 +242,7 @@ $j2 = Start-Job -ScriptBlock {
     param($c, $d, $sql)
     $tmp = [System.IO.Path]::GetTempFileName()
     [System.IO.File]::WriteAllText($tmp, $sql)
-    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=AppRuntimeSecret123! -i $c psql -U studyai_app -d $d 2>&1"
+    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=$using:appPassword -i $c psql -U studyai_app -d $d 2>&1"
     Remove-Item $tmp -Force
     $res
 } -ArgumentList $ContainerName, $DatabaseName, $sqlSub2
@@ -271,7 +273,7 @@ $j1 = Start-Job -ScriptBlock {
     param($c, $d, $sql)
     $tmp = [System.IO.Path]::GetTempFileName()
     [System.IO.File]::WriteAllText($tmp, $sql)
-    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=AppRuntimeSecret123! -i $c psql -U studyai_app -d $d -t -A 2>&1"
+    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=$using:appPassword -i $c psql -U studyai_app -d $d -t -A 2>&1"
     Remove-Item $tmp -Force
     $res
 } -ArgumentList $ContainerName, $DatabaseName, $sqlSettle1
@@ -280,7 +282,7 @@ $j2 = Start-Job -ScriptBlock {
     param($c, $d, $sql)
     $tmp = [System.IO.Path]::GetTempFileName()
     [System.IO.File]::WriteAllText($tmp, $sql)
-    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=AppRuntimeSecret123! -i $c psql -U studyai_app -d $d -t -A 2>&1"
+    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=$using:appPassword -i $c psql -U studyai_app -d $d -t -A 2>&1"
     Remove-Item $tmp -Force
     $res
 } -ArgumentList $ContainerName, $DatabaseName, $sqlSettle2
@@ -335,7 +337,7 @@ $j1 = Start-Job -ScriptBlock {
     param($c, $d, $sql)
     $tmp = [System.IO.Path]::GetTempFileName()
     [System.IO.File]::WriteAllText($tmp, $sql)
-    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=AppRuntimeSecret123! -i $c psql -U studyai_app -d $d 2>&1"
+    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=$using:appPassword -i $c psql -U studyai_app -d $d 2>&1"
     Remove-Item $tmp -Force
     $res
 } -ArgumentList $ContainerName, $DatabaseName, $sqlLock1
@@ -344,7 +346,7 @@ $j2 = Start-Job -ScriptBlock {
     param($c, $d, $sql)
     $tmp = [System.IO.Path]::GetTempFileName()
     [System.IO.File]::WriteAllText($tmp, $sql)
-    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=AppRuntimeSecret123! -i $c psql -U studyai_app -d $d 2>&1"
+    $res = cmd /c "type `"$tmp`" | docker exec -e PGPASSWORD=$using:appPassword -i $c psql -U studyai_app -d $d 2>&1"
     Remove-Item $tmp -Force
     $res
 } -ArgumentList $ContainerName, $DatabaseName, $sqlLock2

@@ -83,12 +83,14 @@ CREATE INDEX ix_data_space_memberships_user ON ownership.data_space_memberships(
   - `HttpOnly = true`
   - `SecurePolicy = CookieSecurePolicy.Always` (or `SameAsRequest` in testing environment)
   - `SameSite = SameSiteMode.Lax`
-  - `ExpireTimeSpan = TimeSpan.FromHours(24)`
+  - Eight-hour idle timeout and absolute cap for normal sessions.
+  - Thirty-day absolute cap for explicit Remember Me sessions.
   - `SlidingExpiration = true`
-- Antiforgery:
+- Antiforgery and abuse controls:
   - Native ASP.NET Core Antiforgery middleware.
   - Cookie named `.StudyAI.Antiforgery`, header `X-XSRF-TOKEN`.
   - State-changing auth requests (register, login, logout) validate antiforgery or use explicit antiforgery validation.
+  - Login is limited to 10 attempts/minute/IP and registration to 5 attempts/hour/IP, with no queue and a `Retry-After` response.
 
 ### 2.2 Atomic Registration Transaction
 The registration flow runs in a single database transaction via `StudyAIDbContext.Database.BeginTransactionAsync`:
@@ -104,7 +106,7 @@ The registration flow runs in a single database transaction via `StudyAIDbContex
 ### 2.3 Server-Side Authorization Boundary
 When an endpoint requires Data Space access (e.g. `/api/v1/data-spaces/{id}/...`):
 1. Extract `actor_id` from `ClaimsPrincipal.FindFirstValue(ClaimTypes.NameIdentifier)`. If missing -> 401 Unauthorized.
-2. Query `ownership.data_space_memberships` for `(data_space_id, user_id)`.
+2. Set transaction-local `app.current_actor_id`, then query actor-scoped `ownership.data_space_memberships` for `(data_space_id, user_id)`.
 3. If not found -> 403 Forbidden.
 4. Set `ICurrentDataSpaceAccessor.CurrentDataSpaceId = dataSpaceId`.
 5. When `StudyAIDbContext` executes database queries, `TenantSessionInterceptor` runs `SELECT set_config('app.current_data_space_id', dataSpaceId, true)` transaction-locally.
@@ -113,4 +115,5 @@ When an endpoint requires Data Space access (e.g. `/api/v1/data-spaces/{id}/...`
 ### 2.4 Session Revocation
 - When `UserManager.UpdateSecurityStampAsync(user)` is called, the security stamp changes.
 - The cookie authentication handler periodically validates `SecurityStamp`.
-- Logout immediately invalidates the cookie by calling `SignInManager.SignOutAsync()`.
+- Logout rotates the user's security stamp before clearing the local cookie, invalidating replayed cookies on every device immediately.
+- Security stamps are validated on every authenticated request.

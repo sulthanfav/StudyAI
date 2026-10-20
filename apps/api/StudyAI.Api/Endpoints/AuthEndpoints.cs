@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using StudyAI.Api.Security;
 using StudyAI.Application.Auth;
 using StudyAI.Application.Auth.Models;
 using StudyAI.Contracts.Auth;
@@ -22,6 +23,8 @@ public static class AuthEndpoints
             .Produces<RegisterResponse>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status409Conflict)
+            .AddEndpointFilter<AntiforgeryValidationFilter>()
+            .RequireRateLimiting("auth-register")
             .AllowAnonymous();
 
         group.MapPost("/login", LoginAsync)
@@ -31,6 +34,8 @@ public static class AuthEndpoints
             .Produces<AuthUserResponse>(StatusCodes.Status200OK)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status423Locked)
+            .AddEndpointFilter<AntiforgeryValidationFilter>()
+            .RequireRateLimiting("auth-login")
             .AllowAnonymous();
 
         group.MapPost("/logout", LogoutAsync)
@@ -38,6 +43,7 @@ public static class AuthEndpoints
             .WithSummary("Log out and invalidate current session")
             .WithDescription("Clears the session cookie and invalidates authentication context.")
             .Produces(StatusCodes.Status204NoContent)
+            .AddEndpointFilter<AntiforgeryValidationFilter>()
             .RequireAuthorization();
 
         group.MapGet("/me", GetMeAsync)
@@ -132,10 +138,15 @@ public static class AuthEndpoints
     }
 
     public static async Task<NoContent> LogoutAsync(
+        ClaimsPrincipal userPrincipal,
         IAuthService authService,
         CancellationToken cancellationToken)
     {
-        await authService.LogoutAsync(cancellationToken);
+        var userIdClaim = userPrincipal.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (Guid.TryParse(userIdClaim, out var userId))
+        {
+            await authService.LogoutAsync(userId, cancellationToken);
+        }
         return TypedResults.NoContent();
     }
 

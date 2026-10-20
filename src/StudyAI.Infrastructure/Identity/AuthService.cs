@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using StudyAI.Application.Auth;
 using StudyAI.Application.Auth.Models;
+using StudyAI.Application.Common.Interfaces;
 using StudyAI.Domain.Identity;
 using StudyAI.Domain.Ownership;
 using StudyAI.Domain.Workspace;
@@ -14,15 +16,21 @@ public sealed class AuthService : IAuthService
     private readonly UserManager<User> _userManager;
     private readonly SignInManager<User> _signInManager;
     private readonly StudyAIDbContext _dbContext;
+    private readonly ICurrentActorAccessor _actorAccessor;
+    private readonly ICurrentDataSpaceAccessor _dataSpaceAccessor;
 
     public AuthService(
         UserManager<User> userManager,
         SignInManager<User> signInManager,
-        StudyAIDbContext dbContext)
+        StudyAIDbContext dbContext,
+        ICurrentActorAccessor actorAccessor,
+        ICurrentDataSpaceAccessor dataSpaceAccessor)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _dbContext = dbContext;
+        _actorAccessor = actorAccessor;
+        _dataSpaceAccessor = dataSpaceAccessor;
     }
 
     public async Task<RegisterResult> RegisterAsync(
@@ -53,12 +61,16 @@ public sealed class AuthService : IAuthService
             throw new InvalidOperationException("Email is already registered.");
         }
 
+        var userId = Guid.CreateVersion7();
+        var dataSpaceId = Guid.CreateVersion7();
+        _actorAccessor.CurrentActorId = userId;
+        _dataSpaceAccessor.CurrentDataSpaceId = dataSpaceId;
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var user = new User
             {
-                Id = Guid.CreateVersion7(),
+                Id = userId,
                 Email = command.Email.Trim(),
                 UserName = command.Email.Trim(),
                 NormalizedEmail = normalizedEmail,
@@ -80,7 +92,7 @@ public sealed class AuthService : IAuthService
 
             var dataSpace = new DataSpace
             {
-                Id = Guid.CreateVersion7(),
+                Id = dataSpaceId,
                 OwnerUserId = user.Id,
                 Kind = "personal",
                 Name = $"{user.DisplayName}'s Personal Space",
@@ -151,24 +163,32 @@ public sealed class AuthService : IAuthService
             return new LoginResult(false, true, false, null, "Account is temporarily locked out due to multiple failed attempts.");
         }
 
-        var signInResult = await _signInManager.PasswordSignInAsync(
+        var signInResult = await _signInManager.CheckPasswordSignInAsync(
             user,
             command.Password,
-            isPersistent: command.RememberMe,
             lockoutOnFailure: true);
 
         if (signInResult.Succeeded)
         {
-            var personalSpace = await _dbContext.DataSpaces
-                .AsNoTracking()
-                .FirstOrDefaultAsync(s => s.OwnerUserId == user.Id && s.Kind == "personal", cancellationToken);
+            var now = DateTimeOffset.UtcNow;
+            var properties = new AuthenticationProperties
+            {
+                IsPersistent = command.RememberMe,
+                AllowRefresh = true,
+                ExpiresUtc = now.Add(command.RememberMe ? TimeSpan.FromDays(30) : TimeSpan.FromHours(8))
+            };
+            properties.Items["studyai:session_started_at"] =
+                now.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture);
+            await _signInManager.SignInAsync(user, properties);
+
+            var personalSpaceId = await GetPersonalDataSpaceIdAsync(user.Id, cancellationToken);
 
             var userSummary = new AuthUserSummary(
                 user.Id,
                 user.Email,
                 user.DisplayName,
                 user.Status,
-                personalSpace?.Id ?? Guid.Empty);
+                personalSpaceId);
 
             return new LoginResult(true, false, false, userSummary, null);
         }
@@ -181,8 +201,18 @@ public sealed class AuthService : IAuthService
         return new LoginResult(false, false, false, null, "Invalid credentials.");
     }
 
-    public async Task LogoutAsync(CancellationToken cancellationToken = default)
+    public async Task LogoutAsync(Guid userId, CancellationToken cancellationToken = default)
     {
+        var user = await _userManager.FindByIdAsync(userId.ToString());
+        if (user is not null)
+        {
+            var result = await _userManager.UpdateSecurityStampAsync(user);
+            if (!result.Succeeded)
+            {
+                throw new InvalidOperationException("Unable to revoke active sessions.");
+            }
+        }
+
         await _signInManager.SignOutAsync();
     }
 
@@ -190,6 +220,8 @@ public sealed class AuthService : IAuthService
         Guid userId,
         CancellationToken cancellationToken = default)
     {
+        _actorAccessor.CurrentActorId = userId;
+        var personalSpaceId = await GetPersonalDataSpaceIdAsync(userId, cancellationToken);
         var user = await _dbContext.Users
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
@@ -199,15 +231,24 @@ public sealed class AuthService : IAuthService
             return null;
         }
 
-        var personalSpace = await _dbContext.DataSpaces
-            .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.OwnerUserId == user.Id && s.Kind == "personal", cancellationToken);
-
         return new AuthUserSummary(
             user.Id,
             user.Email,
             user.DisplayName,
             user.Status,
-            personalSpace?.Id ?? Guid.Empty);
+            personalSpaceId);
+    }
+
+    private async Task<Guid> GetPersonalDataSpaceIdAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        _actorAccessor.CurrentActorId = userId;
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
+        var dataSpaceId = await _dbContext.DataSpaceMemberships
+            .AsNoTracking()
+            .Where(m => m.UserId == userId && m.Role == DataSpaceMembership.RoleOwner)
+            .Select(m => m.DataSpaceId)
+            .FirstOrDefaultAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return dataSpaceId;
     }
 }

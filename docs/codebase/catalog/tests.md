@@ -8,6 +8,12 @@ Status: **VERIFIED**
 
 ## 1. Unit Tests (`tests/StudyAI.UnitTests`)
 
+### `tests/StudyAI.Api.IntegrationTests/Support/AntiforgeryHttpClientExtensions.cs`
+- **Module**: `tests/StudyAI.Api.IntegrationTests`
+- **Category**: Test Support
+- **Responsibility**: Submits state-changing API requests with matching antiforgery cookies and headers.
+- **Verification Status**: `VERIFIED`
+
 ### `tests/StudyAI.UnitTests/StudyAI.UnitTests.csproj`
 - **Module**: `tests/StudyAI.UnitTests`
 - **Category**: Configuration (Project Manifest)

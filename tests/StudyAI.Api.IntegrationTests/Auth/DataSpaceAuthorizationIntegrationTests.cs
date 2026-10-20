@@ -43,7 +43,7 @@ public sealed class DataSpaceAuthorizationIntegrationTests : IAsyncLifetime
             AllowAutoRedirect = false
         });
 
-        var regResponse = await registrationClient.PostAsJsonAsync("/api/v1/auth/register", new RegisterRequest
+        var regResponse = await registrationClient.PostAsJsonWithCsrfAsync("/api/v1/auth/register", new RegisterRequest
         {
             Email = email,
             Password = password,
@@ -60,7 +60,7 @@ public sealed class DataSpaceAuthorizationIntegrationTests : IAsyncLifetime
             AllowAutoRedirect = false
         });
 
-        var loginResponse = await sessionClient.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest
+        var loginResponse = await sessionClient.PostAsJsonWithCsrfAsync("/api/v1/auth/login", new LoginRequest
         {
             Email = email,
             Password = password

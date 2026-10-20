@@ -2,8 +2,6 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using StudyAI.Application.Common.Interfaces;
-using StudyAI.Infrastructure.Persistence;
-using StudyAI.Infrastructure.Persistence.Interceptors;
 
 namespace StudyAI.Api.Security;
 
@@ -37,6 +35,8 @@ public sealed class DataSpaceAuthorizationFilter : IEndpointFilter
         }
 
         var authService = httpContext.RequestServices.GetRequiredService<IDataSpaceAuthorizationService>();
+        var actorAccessor = httpContext.RequestServices.GetRequiredService<ICurrentActorAccessor>();
+        actorAccessor.CurrentActorId = actorId;
         var canAccess = await authService.CanAccessDataSpaceAsync(actorId, dataSpaceId, httpContext.RequestAborted);
         if (!canAccess)
         {
@@ -46,11 +46,8 @@ public sealed class DataSpaceAuthorizationFilter : IEndpointFilter
                 detail: "The authenticated actor is not authorized to access this Data Space.");
         }
 
-        var accessor = httpContext.RequestServices.GetRequiredService<CurrentDataSpaceAccessor>();
+        var accessor = httpContext.RequestServices.GetRequiredService<ICurrentDataSpaceAccessor>();
         accessor.CurrentDataSpaceId = dataSpaceId;
-
-        var dbContext = httpContext.RequestServices.GetRequiredService<StudyAIDbContext>();
-        await dbContext.SetTenantSessionContextAsync(dataSpaceId, httpContext.RequestAborted);
 
         return await next(context);
     }

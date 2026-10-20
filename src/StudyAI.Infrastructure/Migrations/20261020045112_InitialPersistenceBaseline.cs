@@ -523,16 +523,6 @@ CREATE TRIGGER trg_document_chunk_immutable BEFORE UPDATE
     ON documents.document_chunks FOR EACH ROW EXECUTE FUNCTION ops.reject_snapshot_update();
 ");
 
-            // Ensure runtime application role exists before configuring RLS policies
-            migrationBuilder.Sql(@"
-DO $$
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'studyai_app') THEN
-        CREATE ROLE studyai_app WITH LOGIN PASSWORD 'AppRuntimeSecret123!' NOSUPERUSER NOCREATEDB NOBYPASSRLS;
-    END IF;
-END $$;
-");
-
             // Row-Level Security: Enable and force RLS on tenant-scoped tables with fail-closed policy
             var rlsTables = new[]
             {

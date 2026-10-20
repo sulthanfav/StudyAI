@@ -4,6 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 using StudyAI.Application.Common.Interfaces;
 using StudyAI.Infrastructure.Persistence;
 using StudyAI.Infrastructure.Persistence.Interceptors;
+using StudyAI.Application.Workspace;
+using StudyAI.Infrastructure.Workspace;
 
 namespace StudyAI.Infrastructure;
 
@@ -13,9 +15,11 @@ public static class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        services.AddSingleton<CurrentDataSpaceAccessor>();
-        services.AddSingleton<ICurrentDataSpaceAccessor>(sp => sp.GetRequiredService<CurrentDataSpaceAccessor>());
-        services.AddSingleton<ICurrentDataSpaceContext>(sp => sp.GetRequiredService<CurrentDataSpaceAccessor>());
+        services.AddScoped<CurrentDataSpaceAccessor>();
+        services.AddScoped<ICurrentDataSpaceAccessor>(sp => sp.GetRequiredService<CurrentDataSpaceAccessor>());
+        services.AddScoped<ICurrentDataSpaceContext>(sp => sp.GetRequiredService<CurrentDataSpaceAccessor>());
+        services.AddScoped<ICurrentActorAccessor>(sp => sp.GetRequiredService<CurrentDataSpaceAccessor>());
+        services.AddScoped<ICurrentActorContext>(sp => sp.GetRequiredService<CurrentDataSpaceAccessor>());
 
         services.AddScoped<TenantSessionInterceptor>();
 
@@ -42,6 +46,7 @@ public static class DependencyInjection
         services.AddScoped<Microsoft.AspNetCore.Identity.IUserStore<StudyAI.Domain.Identity.User>, StudyAI.Infrastructure.Identity.StudyAIUserStore>();
         services.AddScoped<StudyAI.Application.Auth.IAuthService, StudyAI.Infrastructure.Identity.AuthService>();
         services.AddScoped<IDataSpaceAuthorizationService, StudyAI.Infrastructure.Identity.DataSpaceAuthorizationService>();
+        services.AddScoped<IContentSpaceReader, EfContentSpaceReader>();
 
         return services;
     }

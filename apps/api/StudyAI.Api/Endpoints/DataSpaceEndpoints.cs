@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.EntityFrameworkCore;
 using StudyAI.Api.Security;
+using StudyAI.Application.Workspace;
 using StudyAI.Contracts.Workspace;
-using StudyAI.Infrastructure.Persistence;
 
 namespace StudyAI.Api.Endpoints;
 
@@ -28,14 +27,11 @@ public static class DataSpaceEndpoints
 
     public static async Task<Ok<List<ContentSpaceResponse>>> GetContentSpacesAsync(
         Guid id,
-        StudyAIDbContext dbContext,
+        IContentSpaceReader contentSpaceReader,
         CancellationToken cancellationToken)
     {
-        await using var tx = await dbContext.Database.BeginTransactionAsync(cancellationToken);
-        var contentSpaces = await dbContext.ContentSpaces
-            .AsNoTracking()
-            .Where(c => c.DataSpaceId == id && c.DeletedAt == null)
-            .OrderBy(c => c.Position)
+        var contentSpaces = await contentSpaceReader.ListAsync(id, cancellationToken);
+        var response = contentSpaces
             .Select(c => new ContentSpaceResponse(
                 c.Id,
                 c.DataSpaceId,
@@ -43,9 +39,8 @@ public static class DataSpaceEndpoints
                 c.Title,
                 c.Description,
                 c.Position))
-            .ToListAsync(cancellationToken);
-        await tx.CommitAsync(cancellationToken);
+            .ToList();
 
-        return TypedResults.Ok(contentSpaces);
+        return TypedResults.Ok(response);
     }
 }

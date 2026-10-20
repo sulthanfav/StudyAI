@@ -44,3 +44,13 @@
 - [x] 6.2 Validate documentation integrity with `scripts/docs/validate_docs.py`.
 - [x] 6.3 Verify solution build and full test suite with `dotnet test StudyAI.slnx --no-restore`.
 - [x] 6.4 Compile final 14-point completion report.
+
+## 7. Independent Review Remediation
+
+- [x] 7.1 Enforce antiforgery validation and balanced per-IP rate limits on register, login, and logout.
+- [x] 7.2 Enforce the approved 8-hour idle/absolute session policy, 30-day Remember Me cap, and immediate all-device security-stamp revocation on logout.
+- [x] 7.3 Move actor/data-space security context and content-space reads behind Application interfaces; remove Persistence dependencies from API endpoints and filters.
+- [x] 7.4 Rebase the disposable pre-production migration baseline with actor-scoped membership RLS, least-privilege grants, and canonical case-insensitive email uniqueness.
+- [x] 7.5 Remove tracked fallback database credentials and require environment-provided test and design-time connections.
+- [x] 7.6 Run adversarial PostgreSQL/API regression coverage and the full solution verification suite.
+- [ ] 7.7 Synchronize OpenSpec, architecture maps, catalogs, current state, and archive the completed backend change.

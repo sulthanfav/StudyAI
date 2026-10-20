@@ -14,11 +14,9 @@ namespace StudyAI.Api.IntegrationTests.Persistence;
 
 public static class PersistenceFixture
 {
-    public const string AdminConnectionString =
-        "Host=localhost;Port=55432;Database=studyai_persistence_test;Username=studyai_admin;Password=B598081A714FAEE7A8A6A4B786B5C26F46A86532136C43B87197C7ABDAA33315;Include Error Detail=true";
+    public static string AdminConnectionString => GetRequiredConnectionString("STUDYAI_TEST_ADMIN_CONNECTION_STRING");
 
-    public const string AppConnectionString =
-        "Host=localhost;Port=55432;Database=studyai_persistence_test;Username=studyai_app;Password=AppRuntimeSecret123!;Include Error Detail=true";
+    public static string AppConnectionString => GetRequiredConnectionString("STUDYAI_TEST_APP_CONNECTION_STRING");
 
     public static readonly Guid UserAId = Guid.Parse("0192a000-0000-7000-8000-000000000001");
     public static readonly Guid UserBId = Guid.Parse("0192a000-0000-7000-8000-000000000002");
@@ -46,8 +44,12 @@ public static class PersistenceFixture
     public static readonly Guid ChunkAId = Guid.Parse("0192a000-0000-7000-8000-0000000000a5");
     public static readonly Guid ChunkBId = Guid.Parse("0192a000-0000-7000-8000-0000000000b5");
 
-    private static readonly object SyncLock = new();
+    private static readonly SemaphoreSlim InitializationGate = new(1, 1);
     private static bool _initialized;
+
+    private static string GetRequiredConnectionString(string variableName) =>
+        Environment.GetEnvironmentVariable(variableName)
+        ?? throw new InvalidOperationException($"{variableName} is required to run PostgreSQL integration tests.");
 
     public static StudyAIDbContext CreateAdminContext()
     {
@@ -65,7 +67,7 @@ public static class PersistenceFixture
     public static StudyAIDbContext CreateAppContext(CurrentDataSpaceAccessor? accessor = null)
     {
         var contextAccessor = accessor ?? new CurrentDataSpaceAccessor();
-        var interceptor = new TenantSessionInterceptor(contextAccessor);
+        var interceptor = new TenantSessionInterceptor(contextAccessor, contextAccessor);
         var options = new DbContextOptionsBuilder<StudyAIDbContext>()
             .UseNpgsql(AppConnectionString, o =>
             {
@@ -85,15 +87,15 @@ public static class PersistenceFixture
             return;
         }
 
-        lock (SyncLock)
+        await InitializationGate.WaitAsync(cancellationToken);
+        try
         {
             if (_initialized)
             {
                 return;
             }
-        }
 
-        await using var adminContext = CreateAdminContext();
+            await using var adminContext = CreateAdminContext();
 
         // 1. Ensure Users
         if (!await adminContext.Users.AnyAsync(u => u.Id == UserAId, cancellationToken))
@@ -358,9 +360,11 @@ public static class PersistenceFixture
 
         await adminContext.SaveChangesAsync(cancellationToken);
 
-        lock (SyncLock)
-        {
             _initialized = true;
+        }
+        finally
+        {
+            InitializationGate.Release();
         }
     }
 }

@@ -5,6 +5,16 @@ param(
 )
 
 $ErrorActionPreference = 'Continue'
+$appPassword = $env:STUDYAI_TEST_APP_PASSWORD
+if ([string]::IsNullOrWhiteSpace($appPassword)) { throw 'STUDYAI_TEST_APP_PASSWORD is required.' }
+$migratorPassword = $env:STUDYAI_TEST_MIGRATOR_PASSWORD
+$workerPassword = $env:STUDYAI_TEST_WORKER_PASSWORD
+$readonlyPassword = $env:STUDYAI_TEST_READONLY_PASSWORD
+if ([string]::IsNullOrWhiteSpace($migratorPassword) -or
+    [string]::IsNullOrWhiteSpace($workerPassword) -or
+    [string]::IsNullOrWhiteSpace($readonlyPassword)) {
+    throw 'STUDYAI_TEST_MIGRATOR_PASSWORD, STUDYAI_TEST_WORKER_PASSWORD, and STUDYAI_TEST_READONLY_PASSWORD are required.'
+}
 if (Test-Path variable:PSNativeCommandUseErrorActionPreference) {
     $PSNativeCommandUseErrorActionPreference = $false
 }
@@ -32,7 +42,9 @@ if ($dbExists.Trim() -ne '1') {
 Write-Host "`n[Step 2] Applying tenant roles, RLS policies, and seed data..." -ForegroundColor Yellow
 $setupScriptPath = Join-Path (Resolve-Path "$PSScriptRoot\..").Path "infra\postgres\tenant-poc-setup.sql"
 $setupSql = Get-Content -Raw $setupScriptPath
-$setupSql | & docker exec -i $ContainerName psql -U studyai_admin -d $DatabaseName -v ON_ERROR_STOP=1 | Out-Null
+$setupSql | & docker exec -i $ContainerName psql -U studyai_admin -d $DatabaseName -v ON_ERROR_STOP=1 `
+    -v "migrator_password=$migratorPassword" -v "app_password=$appPassword" `
+    -v "worker_password=$workerPassword" -v "readonly_password=$readonlyPassword" | Out-Null
 Write-Host "Setup applied successfully." -ForegroundColor Green
 
 $results = [System.Collections.Generic.List[PSCustomObject]]::new()
@@ -96,23 +108,23 @@ function Invoke-PsqlScript {
 Write-Host "`n[Step 3] Executing Tenant Isolation & Security Test Scenarios..." -ForegroundColor Yellow
 
 # Scenario 1: DDL Rejection for studyai_app
-$out = Invoke-PsqlCmd "studyai_app" "AppRuntimeSecret123!" "CREATE TABLE public.forbidden_table (id int);"
+$out = Invoke-PsqlCmd "studyai_app" $appPassword "CREATE TABLE public.forbidden_table (id int);"
 $passed = ($out -match 'permission denied')
 Record-TestResult "POC-01" "Application role cannot execute CREATE TABLE (DDL prohibited)" "permission denied" $out $passed
 
 # Scenario 2: ALTER TABLE Rejection for studyai_app
-$out = Invoke-PsqlCmd "studyai_app" "AppRuntimeSecret123!" "ALTER TABLE knowledge.knowledge_items DROP COLUMN title;"
+$out = Invoke-PsqlCmd "studyai_app" $appPassword "ALTER TABLE knowledge.knowledge_items DROP COLUMN title;"
 $passed = ($out -match 'must be owner of table|permission denied')
 Record-TestResult "POC-02" "Application role cannot execute ALTER TABLE (DDL prohibited)" "must be owner of table" $out $passed
 
 # Scenario 3: Missing Context Fail-Closed Read
-$out = Invoke-PsqlCmd "studyai_app" "AppRuntimeSecret123!" "SELECT count(*) FROM knowledge.knowledge_items;" -TuplesOnly
+$out = Invoke-PsqlCmd "studyai_app" $appPassword "SELECT count(*) FROM knowledge.knowledge_items;" -TuplesOnly
 $passed = ($out -eq '0')
 Record-TestResult "POC-03" "Missing context fails closed on SELECT (0 rows returned)" "0" $out $passed
 
 # Scenario 4: Missing Context Fail-Closed Write
 $cmd = "INSERT INTO knowledge.knowledge_items (id, data_space_id, kind, title) VALUES ('0192a000-0000-7000-8000-000000000099', '0192a000-0000-7000-8000-0000000000aa', 'document', 'Rogue Write');"
-$out = Invoke-PsqlCmd "studyai_app" "AppRuntimeSecret123!" $cmd
+$out = Invoke-PsqlCmd "studyai_app" $appPassword $cmd
 $passed = ($out -match 'new row violates row-level security policy')
 Record-TestResult "POC-04" "Missing context fails closed on INSERT (RLS policy violation)" "violates row-level security policy" $out $passed
 
@@ -123,7 +135,7 @@ SELECT set_config('app.current_data_space_id', 'not-a-valid-uuid', true);
 SELECT count(*) FROM knowledge.knowledge_items;
 COMMIT;
 "@
-$out = Invoke-PsqlScript "studyai_app" "AppRuntimeSecret123!" $sql
+$out = Invoke-PsqlScript "studyai_app" $appPassword $sql
 $passed = ($out -match 'invalid input syntax for type uuid')
 Record-TestResult "POC-05" "Malformed UUID context fails closed with cast error" "invalid input syntax for type uuid" $out $passed
 
@@ -137,7 +149,7 @@ SELECT count(*), min(content_text) FROM documents.document_chunks;
 SELECT count(*), min(embedding::text) FROM documents.chunk_embeddings;
 COMMIT;
 "@
-$out = Invoke-PsqlScript "studyai_app" "AppRuntimeSecret123!" $sql -TuplesOnly
+$out = Invoke-PsqlScript "studyai_app" $appPassword $sql -TuplesOnly
 $passed = ($out -match '1\|Document Space A') -and ($out -match '1\|Secret academic notes for Space A') -and ($out -match '1\|\[0.1,0.2,0.3\]')
 Record-TestResult "POC-06" "User A can read authorized Data Space A items, chunks, and embeddings" "1|Document Space A; 1|Secret academic notes; 1|[0.1,0.2,0.3]" $out $passed
 
@@ -151,7 +163,7 @@ SELECT count(*) FROM documents.document_chunks WHERE data_space_id = '$spaceB';
 UPDATE knowledge.knowledge_items SET title = 'Hacked' WHERE data_space_id = '$spaceB';
 COMMIT;
 "@
-$out = Invoke-PsqlScript "studyai_app" "AppRuntimeSecret123!" $sql -TuplesOnly
+$out = Invoke-PsqlScript "studyai_app" $appPassword $sql -TuplesOnly
 $passed = ($out -match "0`r?`n0`r?`nUPDATE 0" -or ($out -match "0" -and $out -match "UPDATE 0"))
 Record-TestResult "POC-07" "User A in Space A context sees 0 rows and updates 0 rows in Space B" "0 rows, UPDATE 0" $out $passed
 
@@ -169,7 +181,7 @@ COMMIT;
 
 SELECT 'SESSION_UNSET:' || count(*) FROM knowledge.knowledge_items;
 "@
-$out = Invoke-PsqlScript "studyai_app" "AppRuntimeSecret123!" $sql -TuplesOnly
+$out = Invoke-PsqlScript "studyai_app" $appPassword $sql -TuplesOnly
 $passed = ($out -match 'SESSION_A:Document Space A') -and 
           ($out -match 'SESSION_B:Document Space B') -and 
           ($out -match 'SESSION_UNSET:0') -and
@@ -184,7 +196,7 @@ SELECT 'INSIDE_TX:' || count(*) FROM knowledge.knowledge_items;
 ROLLBACK;
 SELECT 'AFTER_ROLLBACK:' || count(*) FROM knowledge.knowledge_items;
 "@
-$out = Invoke-PsqlScript "studyai_app" "AppRuntimeSecret123!" $sql -TuplesOnly
+$out = Invoke-PsqlScript "studyai_app" $appPassword $sql -TuplesOnly
 $passed = ($out -match 'INSIDE_TX:1') -and ($out -match 'AFTER_ROLLBACK:0')
 Record-TestResult "POC-09" "Transaction rollback flushes transaction-local context immediately" "INSIDE: 1, AFTER: 0" $out $passed
 
@@ -193,9 +205,9 @@ $sql = @"
 SELECT count(*) FROM documents.processing_runs;
 SELECT count(*) FROM documents.documents;
 "@
-$outWorker = Invoke-PsqlScript "studyai_worker" "WorkerSecret123!" $sql -TuplesOnly
+$outWorker = Invoke-PsqlScript "studyai_worker" $workerPassword $sql -TuplesOnly
 $sqlForbidden = "INSERT INTO billing.plans (id, code, title) VALUES ('0192a000-0000-7000-8000-000000000077', 'hacked', 'Hacked');"
-$outForbidden = Invoke-PsqlCmd "studyai_worker" "WorkerSecret123!" $sqlForbidden
+$outForbidden = Invoke-PsqlCmd "studyai_worker" $workerPassword $sqlForbidden
 $passed = ($outWorker -match '1|2') -and ($outForbidden -match 'permission denied')
 Record-TestResult "POC-10" "Worker role has read access to processing_runs/documents, but denied write to billing" "Allowed documents, denied billing" $outForbidden $passed
 

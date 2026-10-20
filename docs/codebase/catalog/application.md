@@ -19,6 +19,24 @@ Status: **VERIFIED**
 - **Security / Architectural Notes**: May only depend on Domain and Contracts.
 - **Verification Status**: `VERIFIED`
 
+### `src/StudyAI.Application/Common/Interfaces/ICurrentActorContext.cs`
+- **Module**: `src/StudyAI.Application`
+- **Category**: Service Contract / Interface
+- **Responsibility**: Trusted actor context used to scope membership RLS.
+- **Verification Status**: `VERIFIED`
+
+### `src/StudyAI.Application/Workspace/IContentSpaceReader.cs`
+- **Module**: `src/StudyAI.Application`
+- **Category**: Query Contract
+- **Responsibility**: Persistence-neutral boundary for authorized content-space reads.
+- **Verification Status**: `VERIFIED`
+
+### `src/StudyAI.Application/Workspace/ContentSpaceSummary.cs`
+- **Module**: `src/StudyAI.Application`
+- **Category**: Query Model
+- **Responsibility**: Persistence-neutral content-space projection.
+- **Verification Status**: `VERIFIED`
+
 ### `src/StudyAI.Application/packages.lock.json`
 - **Module**: `src/StudyAI.Application`
 - **Category**: Configuration (Lockfile)

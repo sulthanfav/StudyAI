@@ -24,6 +24,56 @@ public sealed class DatabaseSecurityAndIsolationTests : IAsyncLifetime
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact]
+    public async Task MembershipRowsAreScopedToCurrentActor()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using (var adminContext = PersistenceFixture.CreateAdminContext())
+        {
+            if (!await adminContext.DataSpaceMemberships.AnyAsync(
+                    membership => membership.UserId == PersistenceFixture.UserAId &&
+                                  membership.DataSpaceId == PersistenceFixture.SpaceAId,
+                    ct))
+            {
+                adminContext.DataSpaceMemberships.Add(new DataSpaceMembership
+                {
+                    Id = Guid.CreateVersion7(),
+                    UserId = PersistenceFixture.UserAId,
+                    DataSpaceId = PersistenceFixture.SpaceAId,
+                    Role = DataSpaceMembership.RoleOwner,
+                    CreatedAt = DateTimeOffset.UtcNow
+                });
+            }
+
+            if (!await adminContext.DataSpaceMemberships.AnyAsync(
+                    membership => membership.UserId == PersistenceFixture.UserBId &&
+                                  membership.DataSpaceId == PersistenceFixture.SpaceBId,
+                    ct))
+            {
+                adminContext.DataSpaceMemberships.Add(new DataSpaceMembership
+                {
+                    Id = Guid.CreateVersion7(),
+                    UserId = PersistenceFixture.UserBId,
+                    DataSpaceId = PersistenceFixture.SpaceBId,
+                    Role = DataSpaceMembership.RoleOwner,
+                    CreatedAt = DateTimeOffset.UtcNow
+                });
+            }
+
+            await adminContext.SaveChangesAsync(ct);
+        }
+
+        var accessor = new CurrentDataSpaceAccessor { CurrentActorId = PersistenceFixture.UserAId };
+        await using var appContext = PersistenceFixture.CreateAppContext(accessor);
+        await using var transaction = await appContext.Database.BeginTransactionAsync(ct);
+
+        var memberships = await appContext.DataSpaceMemberships.AsNoTracking().ToListAsync(ct);
+
+        Assert.NotEmpty(memberships);
+        Assert.All(memberships, membership => Assert.Equal(PersistenceFixture.UserAId, membership.UserId));
+        Assert.DoesNotContain(memberships, membership => membership.UserId == PersistenceFixture.UserBId);
+    }
+
+    [Fact]
     public async Task ApplicationRoleCannotExecuteDdl()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -392,10 +442,14 @@ public sealed class DatabaseSecurityAndIsolationTests : IAsyncLifetime
             _ = await context.Users.Take(1).ToListAsync(ct);
         }
 
-        // Verify that the secret password is NEVER found in captured logs
+        // Verify that the runtime secrets are NEVER found in captured logs.
         var allLogs = string.Join(Environment.NewLine, capturingLogger.Entries);
-        Assert.DoesNotContain("AppRuntimeSecret123!", allLogs);
-        Assert.DoesNotContain("B598081A714FAEE7A8A6A4B786B5C26F46A86532136C43B87197C7ABDAA33315", allLogs);
+        var appPassword = new NpgsqlConnectionStringBuilder(PersistenceFixture.AppConnectionString).Password;
+        var adminPassword = new NpgsqlConnectionStringBuilder(PersistenceFixture.AdminConnectionString).Password;
+        Assert.False(string.IsNullOrWhiteSpace(appPassword));
+        Assert.False(string.IsNullOrWhiteSpace(adminPassword));
+        Assert.DoesNotContain(appPassword!, allLogs);
+        Assert.DoesNotContain(adminPassword!, allLogs);
     }
 
     [Fact]

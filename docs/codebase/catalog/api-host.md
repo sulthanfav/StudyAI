@@ -8,6 +8,12 @@ Status: **VERIFIED**
 
 ## Catalog Entries
 
+### `apps/api/StudyAI.Api/Security/AntiforgeryValidationFilter.cs`
+- **Module**: `apps/api/StudyAI.Api`
+- **Category**: HTTP Security Filter
+- **Responsibility**: Validates antiforgery tokens on state-changing auth endpoints.
+- **Verification Status**: `VERIFIED`
+
 ### `apps/api/StudyAI.Api/Program.cs`
 - **Module**: `apps/api/StudyAI.Api`
 - **Category**: Source (Host Entry Point)

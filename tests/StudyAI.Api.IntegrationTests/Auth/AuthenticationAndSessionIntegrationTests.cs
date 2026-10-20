@@ -41,6 +41,19 @@ public sealed class AuthenticationAndSessionIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task RegisterWithoutAntiforgeryTokenIsRejected()
+    {
+        var response = await _client.PostAsJsonAsync("/api/v1/auth/register", new RegisterRequest
+        {
+            Email = $"csrf.{Guid.NewGuid():N}@studyai.test",
+            Password = "Password123!",
+            DisplayName = "CSRF Test"
+        }, TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task SuccessfulLoginSetsHttpOnlySessionCookieAndEnablesMeEndpoint()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -48,7 +61,7 @@ public sealed class AuthenticationAndSessionIntegrationTests : IAsyncLifetime
         var password = "Password123!";
 
         // 1. Register user
-        var regResponse = await _client.PostAsJsonAsync("/api/v1/auth/register", new RegisterRequest
+        var regResponse = await _client.PostAsJsonWithCsrfAsync("/api/v1/auth/register", new RegisterRequest
         {
             Email = email,
             Password = password,
@@ -64,7 +77,7 @@ public sealed class AuthenticationAndSessionIntegrationTests : IAsyncLifetime
         });
 
         // 3. Login
-        var loginResponse = await sessionClient.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest
+        var loginResponse = await sessionClient.PostAsJsonWithCsrfAsync("/api/v1/auth/login", new LoginRequest
         {
             Email = email,
             Password = password,
@@ -72,7 +85,6 @@ public sealed class AuthenticationAndSessionIntegrationTests : IAsyncLifetime
         }, ct);
 
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
-
         // Verify Set-Cookie header exists and is HttpOnly
         Assert.True(loginResponse.Headers.Contains("Set-Cookie"));
         var cookies = loginResponse.Headers.GetValues("Set-Cookie").ToList();
@@ -101,7 +113,7 @@ public sealed class AuthenticationAndSessionIntegrationTests : IAsyncLifetime
     {
         var ct = TestContext.Current.CancellationToken;
 
-        var loginResponse = await _client.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest
+        var loginResponse = await _client.PostAsJsonWithCsrfAsync("/api/v1/auth/login", new LoginRequest
         {
             Email = "nonexistent@studyai.test",
             Password = "WrongPassword123!"
@@ -116,6 +128,25 @@ public sealed class AuthenticationAndSessionIntegrationTests : IAsyncLifetime
     }
 
     [Fact]
+    public async Task LoginRateLimitRejectsEleventhAttemptWithRetryAfter()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        HttpResponseMessage? response = null;
+        for (var attempt = 0; attempt < 11; attempt++)
+        {
+            response = await _client.PostAsJsonWithCsrfAsync("/api/v1/auth/login", new LoginRequest
+            {
+                Email = $"missing-{attempt}@studyai.test",
+                Password = "WrongPassword123!"
+            }, ct);
+        }
+
+        Assert.NotNull(response);
+        Assert.Equal(HttpStatusCode.TooManyRequests, response.StatusCode);
+        Assert.NotNull(response.Headers.RetryAfter);
+    }
+
+    [Fact]
     public async Task AccountLockoutAfterConsecutiveFailedAttempts()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -123,7 +154,7 @@ public sealed class AuthenticationAndSessionIntegrationTests : IAsyncLifetime
         var password = "Password123!";
 
         // Register
-        var regResponse = await _client.PostAsJsonAsync("/api/v1/auth/register", new RegisterRequest
+        var regResponse = await _client.PostAsJsonWithCsrfAsync("/api/v1/auth/register", new RegisterRequest
         {
             Email = email,
             Password = password,
@@ -134,7 +165,7 @@ public sealed class AuthenticationAndSessionIntegrationTests : IAsyncLifetime
         // 4 consecutive wrong password attempts return 401 Unauthorized
         for (var i = 0; i < 4; i++)
         {
-            var failed = await _client.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest
+            var failed = await _client.PostAsJsonWithCsrfAsync("/api/v1/auth/login", new LoginRequest
             {
                 Email = email,
                 Password = "WrongPassword999!"
@@ -143,7 +174,7 @@ public sealed class AuthenticationAndSessionIntegrationTests : IAsyncLifetime
         }
 
         // 5th failed attempt reaches MaxFailedAccessAttempts threshold and triggers lockout (423 Locked)
-        var triggerLockout = await _client.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest
+        var triggerLockout = await _client.PostAsJsonWithCsrfAsync("/api/v1/auth/login", new LoginRequest
         {
             Email = email,
             Password = "WrongPassword999!"
@@ -151,7 +182,7 @@ public sealed class AuthenticationAndSessionIntegrationTests : IAsyncLifetime
         Assert.Equal(HttpStatusCode.Locked, triggerLockout.StatusCode);
 
         // Subsequent attempt (even with correct password) remains locked out
-        var lockedResponse = await _client.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest
+        var lockedResponse = await _client.PostAsJsonWithCsrfAsync("/api/v1/auth/login", new LoginRequest
         {
             Email = email,
             Password = password // even with correct password!
@@ -174,7 +205,7 @@ public sealed class AuthenticationAndSessionIntegrationTests : IAsyncLifetime
         var password = "Password123!";
 
         // Register
-        await _client.PostAsJsonAsync("/api/v1/auth/register", new RegisterRequest
+        await _client.PostAsJsonWithCsrfAsync("/api/v1/auth/register", new RegisterRequest
         {
             Email = email,
             Password = password,
@@ -188,24 +219,39 @@ public sealed class AuthenticationAndSessionIntegrationTests : IAsyncLifetime
         });
 
         // Login
-        var loginResponse = await sessionClient.PostAsJsonAsync("/api/v1/auth/login", new LoginRequest
+        var loginResponse = await sessionClient.PostAsJsonWithCsrfAsync("/api/v1/auth/login", new LoginRequest
         {
             Email = email,
             Password = password
         }, ct);
         Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
+        var issuedSessionCookie = loginResponse.Headers.GetValues("Set-Cookie")
+            .Single(value => value.StartsWith(".StudyAI.Session=", StringComparison.Ordinal));
+        var replayCookie = issuedSessionCookie.Split(';', 2)[0];
 
         // Verify authenticated access works
         var meBefore = await sessionClient.GetAsync("/api/v1/auth/me", ct);
         Assert.Equal(HttpStatusCode.OK, meBefore.StatusCode);
 
         // Logout
-        var logoutResponse = await sessionClient.PostAsync("/api/v1/auth/logout", null, ct);
+        var logoutResponse = await sessionClient.PostWithCsrfAsync("/api/v1/auth/logout", ct);
         Assert.Equal(HttpStatusCode.NoContent, logoutResponse.StatusCode);
 
         // Verify subsequent request with this client fails
         var meAfter = await sessionClient.GetAsync("/api/v1/auth/me", ct);
         Assert.Equal(HttpStatusCode.Unauthorized, meAfter.StatusCode);
+
+        using var replayClient = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            HandleCookies = false,
+            AllowAutoRedirect = false
+        });
+        using var replayRequest = new HttpRequestMessage(HttpMethod.Get, "/api/v1/auth/me");
+        replayRequest.Headers.Add("Cookie", replayCookie);
+        var replayResponse = await replayClient.SendAsync(replayRequest, ct);
+        Assert.True(
+            replayResponse.StatusCode == HttpStatusCode.Unauthorized,
+            $"Expected 401 but received {(int)replayResponse.StatusCode}: {await replayResponse.Content.ReadAsStringAsync(ct)} Logs: {string.Join(Environment.NewLine, _factory.Logs.Entries)}");
     }
 
     [Fact]

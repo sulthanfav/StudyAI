@@ -19,6 +19,12 @@ Status: **VERIFIED**
 - **Security / Architectural Notes**: Houses EF Core persistence, transaction interceptors, and RLS policies.
 - **Verification Status**: `VERIFIED`
 
+### `src/StudyAI.Infrastructure/Workspace/EfContentSpaceReader.cs`
+- **Module**: `src/StudyAI.Infrastructure`
+- **Category**: Query Adapter
+- **Responsibility**: Executes content-space reads inside transaction-local RLS context.
+- **Verification Status**: `VERIFIED`
+
 ### `src/StudyAI.Infrastructure/packages.lock.json`
 - **Module**: `src/StudyAI.Infrastructure`
 - **Category**: Configuration (Lockfile)

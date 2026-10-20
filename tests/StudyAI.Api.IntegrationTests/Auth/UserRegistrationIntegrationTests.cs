@@ -50,7 +50,7 @@ public sealed class UserRegistrationIntegrationTests : IAsyncLifetime
             DisplayName = "New Student"
         };
 
-        var response = await _client.PostAsJsonAsync("/api/v1/auth/register", request, ct);
+        var response = await _client.PostAsJsonWithCsrfAsync("/api/v1/auth/register", request, ct);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         Assert.NotNull(response.Headers.Location);
 
@@ -99,11 +99,11 @@ public sealed class UserRegistrationIntegrationTests : IAsyncLifetime
             DisplayName = "First Registration"
         };
 
-        var firstResponse = await _client.PostAsJsonAsync("/api/v1/auth/register", request, ct);
+        var firstResponse = await _client.PostAsJsonWithCsrfAsync("/api/v1/auth/register", request, ct);
         Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
 
         // Attempt second registration with same email
-        var duplicateResponse = await _client.PostAsJsonAsync("/api/v1/auth/register", request, ct);
+        var duplicateResponse = await _client.PostAsJsonWithCsrfAsync("/api/v1/auth/register", request, ct);
         Assert.Equal(HttpStatusCode.Conflict, duplicateResponse.StatusCode);
 
         var problem = await duplicateResponse.Content.ReadFromJsonAsync<ProblemDetails>(ct);
@@ -122,7 +122,7 @@ public sealed class UserRegistrationIntegrationTests : IAsyncLifetime
             DisplayName = "Weak Password User"
         };
 
-        var response = await _client.PostAsJsonAsync("/api/v1/auth/register", request, ct);
+        var response = await _client.PostAsJsonWithCsrfAsync("/api/v1/auth/register", request, ct);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
         // Verify that user was NOT created
@@ -146,8 +146,8 @@ public sealed class UserRegistrationIntegrationTests : IAsyncLifetime
         using var clientA = _factory.CreateClient();
         using var clientB = _factory.CreateClient();
 
-        var taskA = clientA.PostAsJsonAsync("/api/v1/auth/register", request, ct);
-        var taskB = clientB.PostAsJsonAsync("/api/v1/auth/register", request, ct);
+        var taskA = clientA.PostAsJsonWithCsrfAsync("/api/v1/auth/register", request, ct);
+        var taskB = clientB.PostAsJsonWithCsrfAsync("/api/v1/auth/register", request, ct);
 
         var responses = await Task.WhenAll(taskA, taskB);
 

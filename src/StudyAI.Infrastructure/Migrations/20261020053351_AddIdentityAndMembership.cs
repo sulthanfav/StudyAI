@@ -132,6 +132,21 @@ namespace StudyAI.Infrastructure.Migrations
                 schema: "ownership",
                 table: "data_space_memberships",
                 column: "user_id");
+
+            migrationBuilder.Sql(@"
+DROP INDEX IF EXISTS identity.ux_users_email_normalized;
+CREATE UNIQUE INDEX ux_users_email_normalized ON identity.users (lower(email));
+
+ALTER TABLE ownership.data_space_memberships ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ownership.data_space_memberships FORCE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS actor_membership_policy ON ownership.data_space_memberships;
+CREATE POLICY actor_membership_policy ON ownership.data_space_memberships
+    FOR ALL TO studyai_app
+    USING (user_id = NULLIF(current_setting('app.current_actor_id', true), '')::uuid)
+    WITH CHECK (user_id = NULLIF(current_setting('app.current_actor_id', true), '')::uuid);
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON ownership.data_space_memberships TO studyai_app;
+");
         }
 
         /// <inheritdoc />

@@ -7,10 +7,12 @@ namespace StudyAI.Infrastructure.Persistence.Interceptors;
 public sealed class TenantSessionInterceptor : DbTransactionInterceptor
 {
     private readonly ICurrentDataSpaceContext _dataSpaceContext;
+    private readonly ICurrentActorContext _actorContext;
 
-    public TenantSessionInterceptor(ICurrentDataSpaceContext dataSpaceContext)
+    public TenantSessionInterceptor(ICurrentDataSpaceContext dataSpaceContext, ICurrentActorContext actorContext)
     {
         _dataSpaceContext = dataSpaceContext;
+        _actorContext = actorContext;
     }
 
     public override DbTransaction TransactionStarted(
@@ -41,7 +43,7 @@ public sealed class TenantSessionInterceptor : DbTransactionInterceptor
 
         using var command = transaction.Connection.CreateCommand();
         command.Transaction = transaction;
-        command.CommandText = "SELECT set_config('app.current_data_space_id', @space_id, true);";
+        command.CommandText = "SELECT set_config('app.current_data_space_id', @space_id, true), set_config('app.current_actor_id', @actor_id, true);";
 
         var parameter = command.CreateParameter();
         parameter.ParameterName = "space_id";
@@ -49,6 +51,10 @@ public sealed class TenantSessionInterceptor : DbTransactionInterceptor
             ? _dataSpaceContext.CurrentDataSpaceId.Value.ToString()
             : string.Empty;
         command.Parameters.Add(parameter);
+        var actorParameter = command.CreateParameter();
+        actorParameter.ParameterName = "actor_id";
+        actorParameter.Value = _actorContext.CurrentActorId?.ToString() ?? string.Empty;
+        command.Parameters.Add(actorParameter);
 
         command.ExecuteNonQuery();
     }
@@ -62,7 +68,7 @@ public sealed class TenantSessionInterceptor : DbTransactionInterceptor
 
         await using var command = transaction.Connection.CreateCommand();
         command.Transaction = transaction;
-        command.CommandText = "SELECT set_config('app.current_data_space_id', @space_id, true);";
+        command.CommandText = "SELECT set_config('app.current_data_space_id', @space_id, true), set_config('app.current_actor_id', @actor_id, true);";
 
         var parameter = command.CreateParameter();
         parameter.ParameterName = "space_id";
@@ -70,6 +76,10 @@ public sealed class TenantSessionInterceptor : DbTransactionInterceptor
             ? _dataSpaceContext.CurrentDataSpaceId.Value.ToString()
             : string.Empty;
         command.Parameters.Add(parameter);
+        var actorParameter = command.CreateParameter();
+        actorParameter.ParameterName = "actor_id";
+        actorParameter.Value = _actorContext.CurrentActorId?.ToString() ?? string.Empty;
+        command.Parameters.Add(actorParameter);
 
         await command.ExecuteNonQueryAsync(cancellationToken);
     }

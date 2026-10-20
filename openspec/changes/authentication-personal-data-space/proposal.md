@@ -17,7 +17,7 @@ StudyAI Campus V1 requires an authoritative, production-grade authentication and
    - Generate an incremental EF Core migration (`AddIdentityAndMembership`) and apply it with `studyai_migrator`, granting least-privilege DML to `studyai_app`.
 2. **ASP.NET Core Identity Core & Cookie Sessions**:
    - Integrate ASP.NET Core Identity (`UserManager<User>`, `SignInManager<User>`) using an EF Core-backed `IUserStore<User>` in `StudyAI.Infrastructure.Identity`.
-   - Configure HttpOnly, Secure, `SameSite=Lax` session cookies with Antiforgery / CSRF protection (`X-XSRF-TOKEN`), sliding expiration, and rate-limiting on login.
+   - Configure HttpOnly, Secure, `SameSite=Lax` session cookies with Antiforgery / CSRF protection (`X-XSRF-TOKEN`), an eight-hour idle/absolute cap, a thirty-day Remember Me cap, immediate security-stamp revocation, and balanced per-IP rate limits.
 3. **Atomic Provisioning Pipeline**:
    - Implement `IAuthService` executing an atomic unit of work: User creation -> Personal Data Space creation -> Owner Membership creation -> Personal Library creation.
    - Ensure complete rollback on any failure, preventing orphan users or duplicate spaces.
@@ -27,7 +27,7 @@ StudyAI Campus V1 requires an authoritative, production-grade authentication and
    - `POST /api/v1/auth/logout` (204 No Content + clear cookie)
    - `GET /api/v1/auth/me` (200 OK + user & personal space info)
 5. **Server-Side Data Space Authorization**:
-   - Implement `IDataSpaceAuthorizationService` and endpoint authorization filter validating that the authenticated caller owns or is a member of the requested Data Space before populating `CurrentDataSpaceAccessor` and setting PostgreSQL session variable `app.current_data_space_id`.
+   - Implement `IDataSpaceAuthorizationService` and endpoint authorization filter validating explicit membership before populating scoped actor/data-space contexts and setting PostgreSQL session variables `app.current_actor_id` and `app.current_data_space_id`.
    - Enforce fail-closed semantics for unauthenticated, unauthorized, or forged Data Space IDs.
 6. **Automated Integration Testing**:
    - Add comprehensive tests covering registration, login, logout, lockout, CSRF, cross-tenant isolation, session invalidation, and connection pooling safety against real PostgreSQL.
