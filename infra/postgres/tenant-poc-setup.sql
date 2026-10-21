@@ -1,27 +1,18 @@
 -- StudyAI Campus / Tenant Isolation & Role Separation PoC Setup
 -- For non-production isolated validation database: studyai_tenant_poc_20261020
 
--- 1. Create Roles -------------------------------------------------------------
+-- 1. Require Administrator-Provisioned Roles ---------------------------------
 DO $$
+DECLARE
+    required_role text;
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'studyai_migrator') THEN
-        CREATE ROLE studyai_migrator WITH LOGIN CREATEDB;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'studyai_app') THEN
-        CREATE ROLE studyai_app WITH LOGIN NOSUPERUSER NOCREATEDB NOBYPASSRLS;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'studyai_worker') THEN
-        CREATE ROLE studyai_worker WITH LOGIN NOSUPERUSER NOCREATEDB NOBYPASSRLS;
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'studyai_ro') THEN
-        CREATE ROLE studyai_ro WITH LOGIN NOSUPERUSER NOCREATEDB NOBYPASSRLS;
-    END IF;
+    FOREACH required_role IN ARRAY ARRAY['studyai_migrator', 'studyai_app', 'studyai_worker', 'studyai_ro']
+    LOOP
+        IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = required_role) THEN
+            RAISE EXCEPTION 'Required role % is absent; run scripts/Initialize-DatabaseRoles.ps1 first.', required_role;
+        END IF;
+    END LOOP;
 END $$;
-
-ALTER ROLE studyai_migrator PASSWORD :'migrator_password';
-ALTER ROLE studyai_app PASSWORD :'app_password';
-ALTER ROLE studyai_worker PASSWORD :'worker_password';
-ALTER ROLE studyai_ro PASSWORD :'readonly_password';
 
 -- 2. Grant Permissions --------------------------------------------------------
 -- Revoke all direct CREATE privileges on schemas from public and app roles

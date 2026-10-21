@@ -7,11 +7,11 @@ public sealed class StudyAIDbContextFactory : IDesignTimeDbContextFactory<StudyA
 {
     public StudyAIDbContext CreateDbContext(string[] args)
     {
-        var connectionString = Environment.GetEnvironmentVariable("STUDYAI_POSTGRES_CONNECTION_STRING");
+        var connectionString = Environment.GetEnvironmentVariable("STUDYAI_MIGRATION_CONNECTION_STRING");
         if (string.IsNullOrWhiteSpace(connectionString))
         {
             throw new InvalidOperationException(
-                "STUDYAI_POSTGRES_CONNECTION_STRING is required for design-time database operations.");
+                "STUDYAI_MIGRATION_CONNECTION_STRING must be supplied by approved administrator configuration.");
         }
 
         var optionsBuilder = new DbContextOptionsBuilder<StudyAIDbContext>();

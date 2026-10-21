@@ -100,8 +100,5 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(x => x.DeletedAt)
             .HasColumnName("deleted_at");
 
-        builder.HasIndex(x => x.Email)
-            .HasDatabaseName("ux_users_email_normalized")
-            .IsUnique();
     }
 }

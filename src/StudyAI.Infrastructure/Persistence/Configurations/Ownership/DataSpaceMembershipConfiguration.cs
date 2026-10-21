@@ -9,7 +9,10 @@ public sealed class DataSpaceMembershipConfiguration : IEntityTypeConfiguration<
 {
     public void Configure(EntityTypeBuilder<DataSpaceMembership> builder)
     {
-        builder.ToTable("data_space_memberships", "ownership");
+        builder.ToTable("data_space_memberships", "ownership", table =>
+            table.HasCheckConstraint(
+                "ck_data_space_memberships_role",
+                "role IN ('owner', 'member', 'viewer')"));
 
         builder.HasKey(x => x.Id);
 

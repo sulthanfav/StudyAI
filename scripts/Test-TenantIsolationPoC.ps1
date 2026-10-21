@@ -19,6 +19,15 @@ if (Test-Path variable:PSNativeCommandUseErrorActionPreference) {
     $PSNativeCommandUseErrorActionPreference = $false
 }
 
+$appPassword = $env:STUDYAI_DB_APP_PASSWORD
+if ([string]::IsNullOrWhiteSpace($appPassword)) {
+    throw 'STUDYAI_DB_APP_PASSWORD must be supplied by approved test configuration.'
+}
+$workerPassword = $env:STUDYAI_DB_WORKER_PASSWORD
+if ([string]::IsNullOrWhiteSpace($workerPassword)) {
+    throw 'STUDYAI_DB_WORKER_PASSWORD must be supplied by approved test configuration.'
+}
+
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host " StudyAI Campus: Tenant Isolation & Database Roles PoC   " -ForegroundColor Cyan
 Write-Host " Target Database: $DatabaseName                           " -ForegroundColor Cyan

@@ -502,11 +502,58 @@ namespace StudyAI.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Email")
-                        .IsUnique()
-                        .HasDatabaseName("ux_users_email_normalized");
-
                     b.ToTable("users", "identity");
+                });
+
+            modelBuilder.Entity("StudyAI.Domain.Identity.UserSession", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("AbsoluteExpiresAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("absolute_expires_at");
+
+                    b.Property<DateTimeOffset>("IssuedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("issued_at");
+
+                    b.Property<DateTimeOffset?>("LastSeenAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_seen_at");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("revoked_at");
+
+                    b.Property<string>("SecurityStampSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("security_stamp_snapshot");
+
+                    b.Property<byte[]>("SessionIdentifierHash")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("bytea")
+                        .HasColumnName("session_identifier_hash");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionIdentifierHash")
+                        .IsUnique()
+                        .HasDatabaseName("ux_user_sessions_identifier_hash");
+
+                    b.HasIndex("UserId", "RevokedAt", "AbsoluteExpiresAt")
+                        .HasDatabaseName("ix_user_sessions_user_active_expiry");
+
+                    b.ToTable("user_sessions", "identity");
                 });
 
             modelBuilder.Entity("StudyAI.Domain.Knowledge.KnowledgeItem", b =>
@@ -649,7 +696,10 @@ namespace StudyAI.Infrastructure.Migrations
                     b.HasIndex("DataSpaceId", "UserId")
                         .IsUnique();
 
-                    b.ToTable("data_space_memberships", "ownership");
+                    b.ToTable("data_space_memberships", "ownership", t =>
+                        {
+                            t.HasCheckConstraint("ck_data_space_memberships_role", "role IN ('owner', 'member', 'viewer')");
+                        });
                 });
 
             modelBuilder.Entity("StudyAI.Domain.Workspace.ContentSpace", b =>
@@ -788,6 +838,15 @@ namespace StudyAI.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("DataSpaceId")
                         .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("StudyAI.Domain.Identity.UserSession", b =>
+                {
+                    b.HasOne("StudyAI.Domain.Identity.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
