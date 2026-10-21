@@ -78,6 +78,13 @@ If a lower-ranked document conflicts with a higher-ranked source, stop, record t
 | [FEATURE_MAP.md](codebase/FEATURE_MAP.md) | Map tracing user-facing and foundation features to concrete implementation and test files. | Active feature map. |
 | [FILE_INDEX.md](codebase/FILE_INDEX.md) | Master aggregate index of source and infrastructure files with documentation coverage. | Automatically synchronized. |
 
+## Operational runbooks
+
+- [Authentication Security Runbook](development/AUTHENTICATION_SECURITY_RUNBOOK.md) — CSRF exchange, authentication request limits, and trusted proxy configuration.
+- [Database Security Bootstrap and Credential Rotation Runbook](development/DATABASE_SECURITY_BOOTSTRAP_RUNBOOK.md) — administrator role bootstrap, forward migration order, explicit runtime grants, clean-room validation, and credential rotation.
+- [Browser Routing Contract](development/BROWSER_ROUTING_CONTRACT.md) — Next.js browser proxy routing, CSRF token acquisition, and cookie security.
+
+
 ## What is approved
 
 - Campus V1 remains Web-first and includes all nine modules in the final PRD.

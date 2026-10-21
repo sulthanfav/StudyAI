@@ -57,3 +57,13 @@ StudyAI Campus V1 requires an authoritative, maintainable data access layer that
 
 - **Positive**: Clean Architecture boundaries preserved, deterministic reproducible dependencies, official .NET 10 pgvector support, safety against catastrophic schema drift.
 - **Negative / Constraints**: Generating EF Core migrations requires design-time factory setup and maintenance of custom SQL for advanced PostgreSQL triggers and exclusion constraints.
+
+---
+
+## 4. Verified Administrative Migration Clarification (2026-10-20)
+
+- `StudyAIDbContextFactory` has no fallback credential. Migration tooling requires `STUDYAI_MIGRATION_CONNECTION_STRING` from approved administrator configuration.
+- The supported order is: pre-create/rotate roles, apply forward EF migrations with an administrative/migrator connection, then replace runtime grants with the reviewed explicit allowlist. The complete procedure is in `docs/development/DATABASE_SECURITY_BOOTSTRAP_RUNBOOK.md`.
+- Direct execution of the historical migration chain on a cluster without a pre-created `studyai_app` role is unsupported because migrations grant privileges to administrator-provisioned roles. Historical migrations remain credential-free; role secrets are supplied and rotated only through the administrator bootstrap workflow.
+- Forward migration `20261020114606_AuthDatabaseSecurityRemediation` adds server-verifiable sessions, a read-only normalized-email collision preflight plus authoritative expression index, and a validated membership-role CHECK. A populated isolated upgrade preserved the fixture checksum; collision preflight failure preserved all rows and migration history.
+- Repository migrations and scripts do not manage provider-wide/default ACLs. Privileges are asserted from PostgreSQL catalogs after deployment rather than inferred from role names or environment defaults.

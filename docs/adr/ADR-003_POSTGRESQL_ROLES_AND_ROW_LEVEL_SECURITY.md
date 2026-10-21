@@ -52,3 +52,13 @@ StudyAI Campus V1 requires robust tenant isolation and database-level security. 
 
 - **Positive**: Immune to connection-pooling context leakage; hard barrier against accidental cross-tenant queries; compromised app credentials cannot alter database schema.
 - **Negative / Constraints**: Queries executed without an active transaction cannot read RLS-protected tables; requires EF Core transaction interceptors or explicit transaction wrappers.
+
+---
+
+## 4. Verified Bootstrap and Privilege Clarification (2026-10-20)
+
+- Database service roles are created or rotated by the administrator-run `scripts/Initialize-DatabaseRoles.ps1` and `infra/postgres/bootstrap-roles.sql` **before** EF migrations. Passwords come from approved process environment configuration and are never embedded in supported scripts or command arguments.
+- After migrations, `scripts/Set-DatabaseRuntimePrivileges.ps1` replaces runtime access with the explicit allowlist in `infra/postgres/apply-runtime-privileges.sql`. `studyai_app` receives only database CONNECT, approved schema USAGE, and DML on reviewed tables.
+- Automated PostgreSQL evidence denies `studyai_app` access to `ops.__ef_migrations_history`, DDL/ALTER, table ownership, grant effects/options, TEMP, public-schema CREATE, elevated role membership, and newly created unapproved tables.
+- These repository scripts manage explicit privileges in the target database only. They do **not** claim ownership of cluster-wide configuration or ambient/default ACLs created by a hosting provider, DBA, image, or another object owner. Every target environment must run the scripts and the privilege probes; inherited cluster state is not trusted.
+- The current RLS evidence covers the incrementally migrated high-risk subset. It is not a claim that all future Campus tables already have policies. The request-owned authorization/transaction boundary remains separately tracked by `auth-database-security-remediation` section 5.

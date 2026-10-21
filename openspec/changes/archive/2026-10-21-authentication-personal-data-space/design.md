@@ -1,5 +1,7 @@
 # Technical Design: Authentication, Authorization & Personal Data Space
 
+> **Supersession note (2026-10-20):** This is the Iteration 4 baseline design, not a statement of current verified security behavior. `auth-database-security-remediation` governs the corrected implementation and evidence. In particular, the server-verifiable session registry and normalized-email expression index are verified, while secret-free database bootstrap/least privilege and request-owned tenant transactions remain incomplete.
+
 ## 1. Identity Schema Integration & Compatibility
 
 ### 1.1 Canonical `identity.users` Compatibility Audit

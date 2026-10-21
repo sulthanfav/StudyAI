@@ -14,9 +14,11 @@ namespace StudyAI.Api.IntegrationTests.Persistence;
 
 public static class PersistenceFixture
 {
-    public static string AdminConnectionString => GetRequiredConnectionString("STUDYAI_TEST_ADMIN_CONNECTION_STRING");
+    public static string AdminConnectionString =>
+        GetRequiredConnectionString("STUDYAI_TEST_ADMIN_CONNECTION_STRING");
 
-    public static string AppConnectionString => GetRequiredConnectionString("STUDYAI_TEST_APP_CONNECTION_STRING");
+    public static string AppConnectionString =>
+        GetRequiredConnectionString("STUDYAI_TEST_APP_CONNECTION_STRING");
 
     public static readonly Guid UserAId = Guid.Parse("0192a000-0000-7000-8000-000000000001");
     public static readonly Guid UserBId = Guid.Parse("0192a000-0000-7000-8000-000000000002");
@@ -48,8 +50,10 @@ public static class PersistenceFixture
     private static bool _initialized;
 
     private static string GetRequiredConnectionString(string variableName) =>
-        Environment.GetEnvironmentVariable(variableName)
-        ?? throw new InvalidOperationException($"{variableName} is required to run PostgreSQL integration tests.");
+        Environment.GetEnvironmentVariable(variableName) is { Length: > 0 } connectionString
+            ? connectionString
+            : throw new InvalidOperationException(
+                $"Required integration-test connection string environment variable '{variableName}' is not configured.");
 
     public static StudyAIDbContext CreateAdminContext()
     {
@@ -154,6 +158,20 @@ public static class PersistenceFixture
             });
         }
         await adminContext.SaveChangesAsync(cancellationToken);
+
+        // 2b. Ensure Data Space Memberships
+        if (!await adminContext.DataSpaceMemberships.AnyAsync(m => m.UserId == UserAId && m.DataSpaceId == SpaceAId, cancellationToken))
+        {
+            adminContext.DataSpaceMemberships.Add(new DataSpaceMembership
+            {
+                Id = Guid.Parse("0192a000-0000-7000-8000-0000000000a6"),
+                DataSpaceId = SpaceAId,
+                UserId = UserAId,
+                Role = DataSpaceMembership.RoleOwner,
+                CreatedAt = DateTimeOffset.UtcNow
+            });
+            await adminContext.SaveChangesAsync(cancellationToken);
+        }
 
         // 3. Ensure Content Spaces
         if (!await adminContext.ContentSpaces.AnyAsync(c => c.Id == ContentSpaceAId, cancellationToken))

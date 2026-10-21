@@ -94,6 +94,41 @@ Status: **VERIFIED**
 - **Responsibility**: Executes 10 tenant isolation, role permission boundary, pooled connection reuse, and fail-closed security scenarios against PostgreSQL.
 - **Verification Status**: `VERIFIED`
 
+### `scripts/Test-CleanRoomPostgresBootstrap.ps1`
+- **Module**: `scripts`
+- **Category**: Database Security Acceptance Test
+- **Responsibility**: Starts a uniquely named PostgreSQL container with a cryptographic ephemeral credential and tmpfs data directory, proves no inherited StudyAI roles/schemas or permissive PUBLIC schema ACL, and removes only resources created by that run.
+- **Security / Architectural Notes**: Uses no retained volume, never prints the generated credential, and records container ownership before cleanup.
+- **Verification Status**: `VERIFIED`
+
+### `scripts/Initialize-DatabaseRoles.ps1`
+- **Module**: `scripts`
+- **Category**: Administrative Database Bootstrap
+- **Responsibility**: Validates approved environment configuration and invokes the role bootstrap through `psql` without placing passwords in command arguments or logs.
+- **Associated Code**: `infra/postgres/bootstrap-roles.sql`.
+- **Security / Architectural Notes**: Intended to run before EF migrations; restores pre-existing libpq process variables after execution.
+- **Verification Status**: `VERIFIED`
+
+### `infra/postgres/bootstrap-roles.sql`
+- **Module**: `infra/postgres`
+- **Category**: Administrative SQL Bootstrap
+- **Responsibility**: Idempotently pre-creates or rotates migrator, application, worker, and read-only roles from environment-backed psql variables.
+- **Security / Architectural Notes**: Contains no credential literal and gives every service role non-admin flags with `NOBYPASSRLS`.
+- **Verification Status**: `VERIFIED`
+
+### `scripts/Set-DatabaseRuntimePrivileges.ps1`
+- **Module**: `scripts`
+- **Category**: Administrative Database Privilege Application
+- **Responsibility**: Applies the reviewed runtime allowlist through `psql` using administrator configuration without emitting credentials.
+- **Associated Code**: `infra/postgres/apply-runtime-privileges.sql`.
+- **Verification Status**: `VERIFIED`
+
+### `infra/postgres/apply-runtime-privileges.sql`
+- **Module**: `infra/postgres`
+- **Category**: Database Security Policy
+- **Responsibility**: Replaces ambient runtime grants with explicit CONNECT, schema USAGE, and allowlisted table DML while denying migration history, DDL, TEMP, ownership, role membership, grant options, and unapproved tables.
+- **Verification Status**: `VERIFIED`
+
 ### `scripts/Test-ConcurrencyInvariants.ps1`
 - **Module**: `scripts/`
 - **Category**: Script (Test Runner)

@@ -103,11 +103,13 @@ Status: **VERIFIED**
 ### `src/StudyAI.Application/Auth/Models/RegisterResult.cs`
 - **Module**: `src/StudyAI.Application`
 - **Category**: Result Model
-- **Responsibility**: Result of user and default data space provisioning.
+- **Responsibility**: Explicit registration outcome distinguishing successful provisioning from duplicate email without exception/message inspection.
 - **Verification Status**: `VERIFIED`
 
-### `src/StudyAI.Application/Common/Interfaces/IDataSpaceAuthorizationService.cs`
+### `src/StudyAI.Application/Common/Interfaces/IAuthorizedDataSpaceScope.cs`
 - **Module**: `src/StudyAI.Application`
-- **Category**: Service Contract / Interface
-- **Responsibility**: Server-side authorization contract verifying actor membership in a Data Space.
+- **Category**: Security Boundary Contract
+- **Responsibility**: Defines the authorized Data Space transaction scope opened by Infrastructure and completed only after the API handler succeeds.
+- **Public Interfaces / Exports**: `IAuthorizedDataSpaceScope`, `IAuthorizedDataSpaceScopeFactory`.
+- **Security / Architectural Notes**: Keeps EF Core and transaction implementation details out of API endpoints and filters.
 - **Verification Status**: `VERIFIED`

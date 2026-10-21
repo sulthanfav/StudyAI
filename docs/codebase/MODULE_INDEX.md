@@ -13,6 +13,9 @@ Navigation: [`SYSTEM_MAP.md`](../../SYSTEM_MAP.md) | [`docs/START_HERE.md`](../S
 - **Responsibilities**:
   - Host configuration, options validation, and service collection composition.
   - Health check endpoints (`/health/live`, `/health/ready`).
+  - Authentication & DataSpace endpoints (`/api/v1/auth`, `/api/v1/data-spaces`).
+  - Antiforgery CSRF endpoint filters and authentication rate limiting.
+  - Request-owned tenant transaction and actor RLS boundary (`DataSpaceAuthorizationFilter`).
   - Request pipeline middleware (Correlation ID, structured JSON logging, redaction).
 - **Public Boundaries**: HTTP REST endpoints on configured port (`http://localhost:5080` per `launchSettings.json`).
 - **Entry Points**: [`apps/api/StudyAI.Api/Program.cs`](../../apps/api/StudyAI.Api/Program.cs).
@@ -80,12 +83,16 @@ Navigation: [`SYSTEM_MAP.md`](../../SYSTEM_MAP.md) | [`docs/START_HERE.md`](../S
 
 ### `tests/StudyAI.ArchitectureTests`
 - **Purpose**: NetArchTest / ArchUnit-style tests enforcing Clean Architecture project dependency rules.
-- **Key Tests**: `ProjectReferenceRulesTests.cs`.
+- **Key Tests**: `ProjectReferenceRulesTests.cs`, `EndpointArchitectureTests.cs`.
 - **File Catalog**: [`catalog/tests.md`](catalog/tests.md).
 
 ### `tests/StudyAI.Api.IntegrationTests`
-- **Purpose**: WebApplicationFactory-based host integration tests.
-- **Key Tests**: `HealthEndpointTests.cs`, `CorrelationAndLoggingTests.cs`, `ConfigurationStartupTests.cs`, `ApiSurfaceTests.cs`.
+- **Purpose**: WebApplicationFactory-based host integration tests with real PostgreSQL persistence.
+- **Key Tests**:
+  - Foundation: `HealthEndpointTests.cs`, `CorrelationAndLoggingTests.cs`, `ConfigurationStartupTests.cs`, `ApiSurfaceTests.cs`.
+  - Authentication & Sessions: `AuthenticationAndSessionIntegrationTests.cs`, `ServerSessionLifecycleIntegrationTests.cs`, `AntiforgeryIntegrationTests.cs`, `AuthenticationRateLimitIntegrationTests.cs`, `RegistrationRaceIntegrationTests.cs`.
+  - Tenant & Persistence: `DatabaseSecurityAndIsolationTests.cs`, `DataSpaceAuthorizationIntegrationTests.cs`, `SessionModelMetadataTests.cs`.
+  - Browser Contract: `BrowserAuthConfigurationTests.cs`, `BrowserProxyContractIntegrationTests.cs`.
 - **File Catalog**: [`catalog/tests.md`](catalog/tests.md).
 
 ---

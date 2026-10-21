@@ -186,3 +186,27 @@ Status: **VERIFIED**
 - **Category**: Security / Endpoint Filter
 - **Responsibility**: Validates authenticated actor membership in target Data Space and sets transaction-local RLS context.
 - **Verification Status**: `VERIFIED`
+
+### `apps/api/StudyAI.Api/Composition/AuthenticationRateLimiting.cs`
+- **Module**: `apps/api/StudyAI.Api`
+- **Category**: Security / Configuration
+- **Responsibility**: Configures independent fixed-window register/login limits, stable 429 Problem Details, direct-peer partitions, and explicit trusted proxy/network parsing.
+- **Associated Tests**: `AuthenticationRateLimitIntegrationTests.cs`.
+- **Security / Architectural Notes**: Queueing is disabled; forwarded addresses are ignored unless an exact trusted proxy or CIDR network is configured.
+- **Verification Status**: `VERIFIED`
+
+### `apps/api/StudyAI.Api/Composition/BrowserAuthOptions.cs`
+- **Module**: `apps/api/StudyAI.Api`
+- **Category**: Security / Configuration
+- **Responsibility**: Strongly typed configuration options validating browser auth settings, proxy origin URLs, HTTPS requirements, and prohibiting wildcard origins in credentialed CORS.
+- **Associated Tests**: `BrowserAuthConfigurationTests.cs`.
+- **Security / Architectural Notes**: Fails application startup if HTTPS is violated in production or if wildcard origins are configured with credential support.
+- **Verification Status**: `VERIFIED`
+
+### `apps/api/StudyAI.Api/Security/AntiforgeryValidationFilter.cs`
+- **Module**: `apps/api/StudyAI.Api`
+- **Category**: Filter / Security
+- **Responsibility**: Validates ASP.NET Core antiforgery tokens on cookie-authenticated mutation endpoints, returning standard 400 Problem Details on token failure.
+- **Associated Tests**: `AntiforgeryIntegrationTests.cs`.
+- **Security / Architectural Notes**: Prevents CSRF attacks against browser session mutations.
+- **Verification Status**: `VERIFIED`

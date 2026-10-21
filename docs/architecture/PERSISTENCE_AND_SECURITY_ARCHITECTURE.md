@@ -1,6 +1,7 @@
 # StudyAI Persistence & Security Architecture — Iteration 3
 
-Status: Approved & Implemented Foundation (ADR-001, ADR-003, ADR-016)  
+Status: Approved foundation with completed security remediation (ADR-001, ADR-003, ADR-016)
+
 Target: StudyAI Campus V1  
 Frameworks: ASP.NET Core (`net10.0`), EF Core 10, Npgsql 10, pgvector, PostgreSQL 16+
 
@@ -21,10 +22,12 @@ In accordance with Clean Architecture principles:
 As approved in **ADR-003**:
 1. **Server-Side Authorization**: Application authorization is mandatory. Client-supplied tenant IDs are never trusted as authorization.
 2. **PostgreSQL Roles**:
-   - `studyai_admin`: Superuser role strictly reserved for administrative tasks and schema migrations.
-   - `studyai_app`: Least-privilege runtime role granted DML (`SELECT, INSERT, UPDATE, DELETE`) on application tables. Explicitly has `NOSUPERUSER NOCREATEDB NOBYPASSRLS` and NO `CREATE` privileges on schemas (DDL attempts fail with `42501 insufficient_privilege`).
+   - An administrator-controlled bootstrap identity creates/rotates `studyai_migrator`, `studyai_app`, `studyai_worker`, and `studyai_ro` before migrations.
+   - `studyai_migrator`: administrative migration identity; never used by the running API.
+   - `studyai_app`: least-privilege runtime role granted DML (`SELECT, INSERT, UPDATE, DELETE`) only on the reviewed table allowlist. It has `NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS`, no object ownership, no migration-history access, no grant option, and no schema `CREATE`.
+   - The repository applies explicit target-database grants; it does not claim control of provider/cluster-wide default ACLs. Deployment verifies catalogs after applying `infra/postgres/apply-runtime-privileges.sql`.
 3. **Defense-in-Depth RLS Policies**:
-   - Every tenant-scoped table has `ROW LEVEL SECURITY` enabled and forced (`FORCE ROW LEVEL SECURITY`).
+   - The currently migrated high-risk tenant-scoped subset has `ROW LEVEL SECURITY` enabled and forced (`FORCE ROW LEVEL SECURITY`); future module tables require their own reviewed migration and tests.
    - Policy: `tenant_isolation_policy` applied `FOR ALL TO studyai_app`:
      ```sql
      USING (data_space_id = NULLIF(current_setting('app.current_data_space_id', true), '')::uuid)
@@ -67,6 +70,8 @@ In alignment with PRD invariants ("Never silently overwrite concurrent edits"):
 1. **Migration Baseline**:
    - Stored in schema `ops` under table `__ef_migrations_history`.
    - Initial migration `20261020045112_InitialPersistenceBaseline` creates the approved 11-table coherent subset, schemas, extensions, triggers, RLS policies, and role grants.
+   - Supported deployment pre-creates roles with `scripts/Initialize-DatabaseRoles.ps1`, supplies `STUDYAI_MIGRATION_CONNECTION_STRING`, applies forward migrations, then runs `scripts/Set-DatabaseRuntimePrivileges.ps1`.
+   - Running the historical migration chain directly on an unbootstrapped cluster is unsupported; see `docs/development/DATABASE_SECURITY_BOOTSTRAP_RUNBOOK.md`.
 2. **Coverage Accounting**:
    - **Covered (11 tables)**:
      - `identity.users`

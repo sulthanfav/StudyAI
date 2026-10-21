@@ -56,6 +56,13 @@ Status: **VERIFIED**
 - **Responsibility**: NuGet package lockfile ensuring deterministic dependency resolution for architecture tests.
 - **Verification Status**: `VERIFIED`
 
+### `tests/StudyAI.ArchitectureTests/EndpointArchitectureTests.cs`
+- **Module**: `tests/StudyAI.ArchitectureTests`
+- **Category**: Test
+- **Responsibility**: Enforces API architectural isolation: ensures HTTP endpoints and controllers do not inject or depend directly on DbContext types, requiring Application abstractions instead.
+- **Associated Code**: `apps/api/StudyAI.Api/Endpoints/`.
+- **Verification Status**: `VERIFIED`
+
 ### `tests/StudyAI.ArchitectureTests/ProjectReferenceRulesTests.cs`
 - **Module**: `tests/StudyAI.ArchitectureTests`
 - **Category**: Test
@@ -159,4 +166,60 @@ Status: **VERIFIED**
 - **Category**: Test
 - **Responsibility**: Unit tests for Python documentation indexing and validation tools (`sync_codebase_index.py`, `validate_docs.py`).
 - **Associated Code**: `scripts/docs/sync_codebase_index.py`, `scripts/docs/validate_docs.py`.
+- **Verification Status**: `VERIFIED`
+
+### `tests/StudyAI.Api.IntegrationTests/Auth/AntiforgeryIntegrationTests.cs`
+- **Module**: `tests/StudyAI.Api.IntegrationTests`
+- **Category**: Test
+- **Responsibility**: Verifies missing, invalid, and valid antiforgery exchanges for register, login, and authenticated logout, including no-state-change assertions.
+- **Associated Code**: `apps/api/StudyAI.Api/Security/AntiforgeryValidationFilter.cs`.
+- **Verification Status**: `VERIFIED`
+
+### `tests/StudyAI.Api.IntegrationTests/Auth/AuthenticationRateLimitIntegrationTests.cs`
+- **Module**: `tests/StudyAI.Api.IntegrationTests`
+- **Category**: Test
+- **Responsibility**: Verifies independent rate-limiting policies for registration and login endpoints, stable 429 Problem Details, and trusted proxy header resolution.
+- **Associated Code**: `apps/api/StudyAI.Api/Composition/AuthenticationRateLimiting.cs`.
+- **Verification Status**: `VERIFIED`
+
+### `tests/StudyAI.Api.IntegrationTests/Auth/BrowserAuthConfigurationTests.cs`
+- **Module**: `tests/StudyAI.Api.IntegrationTests`
+- **Category**: Test
+- **Responsibility**: Verifies validation rules of BrowserAuthOptions: HTTPS requirements in production, explicit proxy origin allowlist, and rejection of wildcard CORS origins.
+- **Associated Code**: `apps/api/StudyAI.Api/Composition/BrowserAuthOptions.cs`.
+- **Verification Status**: `VERIFIED`
+
+### `tests/StudyAI.Api.IntegrationTests/Auth/BrowserProxyContractIntegrationTests.cs`
+- **Module**: `tests/StudyAI.Api.IntegrationTests`
+- **Category**: Test
+- **Responsibility**: Validates that browser reverse-proxy semantics preserve SameSite/HttpOnly session cookies, antiforgery headers, HTTP status codes, and RFC 7807 Problem Details.
+- **Associated Code**: `apps/api/StudyAI.Api/Endpoints/AuthEndpoints.cs`.
+- **Verification Status**: `VERIFIED`
+
+### `tests/StudyAI.Api.IntegrationTests/Auth/RegistrationRaceIntegrationTests.cs`
+- **Module**: `tests/StudyAI.Api.IntegrationTests`
+- **Category**: Test
+- **Responsibility**: Validates race safety of concurrent registration attempts for identical and case/whitespace-colliding emails, ensuring exactly one 201 Created and deterministic 409 Conflict.
+- **Associated Code**: `src/StudyAI.Infrastructure/Identity/AuthService.cs`.
+- **Verification Status**: `VERIFIED`
+
+### `tests/StudyAI.Api.IntegrationTests/Auth/ServerSessionLifecycleIntegrationTests.cs`
+- **Module**: `tests/StudyAI.Api.IntegrationTests`
+- **Category**: Test
+- **Responsibility**: Verifies server-verifiable session lifecycle: cookie replay rejection after logout, absolute session expiry, security stamp revocation, and multi-session isolation.
+- **Associated Code**: `src/StudyAI.Infrastructure/Identity/SessionCookieValidator.cs`.
+- **Verification Status**: `VERIFIED`
+
+### `tests/StudyAI.Api.IntegrationTests/Persistence/SessionModelMetadataTests.cs`
+- **Module**: `tests/StudyAI.Api.IntegrationTests`
+- **Category**: Test
+- **Responsibility**: Verifies database model constraints and metadata for user sessions: SHA-256 identifier hashing, absence of plaintext session secrets, and indexes.
+- **Associated Code**: `src/StudyAI.Infrastructure/Persistence/Configurations/Identity/UserSessionConfiguration.cs`.
+- **Verification Status**: `VERIFIED`
+
+### `tests/StudyAI.Api.IntegrationTests/Support/AntiforgeryHttpClientExtensions.cs`
+- **Module**: `tests/StudyAI.Api.IntegrationTests`
+- **Category**: Test Support
+- **Responsibility**: Extension methods for test HTTP clients to automate cookie jar handling, antiforgery token extraction from cookies, and header propagation.
+- **Associated Tests**: Integration test suites in `tests/StudyAI.Api.IntegrationTests/Auth/`.
 - **Verification Status**: `VERIFIED`

@@ -24,56 +24,6 @@ public sealed class DatabaseSecurityAndIsolationTests : IAsyncLifetime
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     [Fact]
-    public async Task MembershipRowsAreScopedToCurrentActor()
-    {
-        var ct = TestContext.Current.CancellationToken;
-        await using (var adminContext = PersistenceFixture.CreateAdminContext())
-        {
-            if (!await adminContext.DataSpaceMemberships.AnyAsync(
-                    membership => membership.UserId == PersistenceFixture.UserAId &&
-                                  membership.DataSpaceId == PersistenceFixture.SpaceAId,
-                    ct))
-            {
-                adminContext.DataSpaceMemberships.Add(new DataSpaceMembership
-                {
-                    Id = Guid.CreateVersion7(),
-                    UserId = PersistenceFixture.UserAId,
-                    DataSpaceId = PersistenceFixture.SpaceAId,
-                    Role = DataSpaceMembership.RoleOwner,
-                    CreatedAt = DateTimeOffset.UtcNow
-                });
-            }
-
-            if (!await adminContext.DataSpaceMemberships.AnyAsync(
-                    membership => membership.UserId == PersistenceFixture.UserBId &&
-                                  membership.DataSpaceId == PersistenceFixture.SpaceBId,
-                    ct))
-            {
-                adminContext.DataSpaceMemberships.Add(new DataSpaceMembership
-                {
-                    Id = Guid.CreateVersion7(),
-                    UserId = PersistenceFixture.UserBId,
-                    DataSpaceId = PersistenceFixture.SpaceBId,
-                    Role = DataSpaceMembership.RoleOwner,
-                    CreatedAt = DateTimeOffset.UtcNow
-                });
-            }
-
-            await adminContext.SaveChangesAsync(ct);
-        }
-
-        var accessor = new CurrentDataSpaceAccessor { CurrentActorId = PersistenceFixture.UserAId };
-        await using var appContext = PersistenceFixture.CreateAppContext(accessor);
-        await using var transaction = await appContext.Database.BeginTransactionAsync(ct);
-
-        var memberships = await appContext.DataSpaceMemberships.AsNoTracking().ToListAsync(ct);
-
-        Assert.NotEmpty(memberships);
-        Assert.All(memberships, membership => Assert.Equal(PersistenceFixture.UserAId, membership.UserId));
-        Assert.DoesNotContain(memberships, membership => membership.UserId == PersistenceFixture.UserBId);
-    }
-
-    [Fact]
     public async Task ApplicationRoleCannotExecuteDdl()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -86,6 +36,69 @@ public sealed class DatabaseSecurityAndIsolationTests : IAsyncLifetime
 
         var ex = await Assert.ThrowsAsync<PostgresException>(() => command.ExecuteNonQueryAsync(ct));
         Assert.Equal("42501", ex.SqlState); // insufficient_privilege
+    }
+
+    [Fact]
+    public async Task ApplicationRoleHasOnlyReviewedRuntimePrivileges()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var adminContext = PersistenceFixture.CreateAdminContext();
+        var adminConnection = (NpgsqlConnection)adminContext.Database.GetDbConnection();
+        await adminConnection.OpenAsync(ct);
+        await using var appContext = PersistenceFixture.CreateAppContext();
+        var appConnection = (NpgsqlConnection)appContext.Database.GetDbConnection();
+        await appConnection.OpenAsync(ct);
+
+        await using var createProbe = adminConnection.CreateCommand();
+        createProbe.CommandText = "CREATE TABLE ai.runtime_privilege_probe (id integer PRIMARY KEY);";
+        await createProbe.ExecuteNonQueryAsync(ct);
+
+        try
+        {
+            foreach (var deniedSql in new[]
+                     {
+                         "DELETE FROM ops.__ef_migrations_history;",
+                         "ALTER TABLE identity.users ADD COLUMN runtime_privilege_probe integer;",
+                         "SELECT * FROM ai.runtime_privilege_probe;"
+                     })
+            {
+                await using var deniedCommand = appConnection.CreateCommand();
+                deniedCommand.CommandText = deniedSql;
+                var exception = await Assert.ThrowsAsync<PostgresException>(
+                    () => deniedCommand.ExecuteNonQueryAsync(ct));
+                Assert.Equal(PostgresErrorCodes.InsufficientPrivilege, exception.SqlState);
+            }
+
+            await using (var ineffectiveGrant = appConnection.CreateCommand())
+            {
+                ineffectiveGrant.CommandText = "GRANT SELECT ON identity.users TO studyai_ro;";
+                await ineffectiveGrant.ExecuteNonQueryAsync(ct);
+            }
+
+            await using var factsCommand = adminConnection.CreateCommand();
+            factsCommand.CommandText = """
+                SELECT concat_ws('|',
+                    (SELECT count(*)
+                     FROM information_schema.role_table_grants
+                     WHERE grantee = 'studyai_app' AND is_grantable = 'YES'),
+                    (SELECT count(*)
+                     FROM pg_tables
+                     WHERE schemaname IN ('identity', 'ownership', 'workspace', 'knowledge', 'documents', 'ai', 'ops')
+                       AND tableowner = 'studyai_app'),
+                    has_table_privilege('studyai_app', 'ops.__ef_migrations_history', 'SELECT,INSERT,UPDATE,DELETE'),
+                    has_database_privilege('studyai_app', current_database(), 'TEMP'),
+                    has_schema_privilege('studyai_app', 'public', 'CREATE'),
+                    has_table_privilege('studyai_ro', 'identity.users', 'SELECT'),
+                    pg_has_role('studyai_app', 'studyai_migrator', 'MEMBER'));
+                """;
+            Assert.Equal("0|0|f|f|f|f|f", await factsCommand.ExecuteScalarAsync(ct));
+        }
+        finally
+        {
+            await using var dropProbe = adminConnection.CreateCommand();
+            dropProbe.CommandText = "DROP TABLE IF EXISTS ai.runtime_privilege_probe;";
+            await dropProbe.ExecuteNonQueryAsync(ct);
+        }
     }
 
     [Fact]
@@ -116,6 +129,78 @@ public sealed class DatabaseSecurityAndIsolationTests : IAsyncLifetime
         var ex = await Assert.ThrowsAsync<DbUpdateException>(() => appContext.SaveChangesAsync(ct));
         var pgEx = Assert.IsType<PostgresException>(ex.InnerException);
         Assert.Equal("42501", pgEx.SqlState); // RLS with_check violation
+    }
+
+    [Fact]
+    public async Task MissingActorContextDeniesMembershipReads()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var appContext = PersistenceFixture.CreateAppContext();
+        await using var transaction = await appContext.Database.BeginTransactionAsync(ct);
+
+        Assert.Empty(await appContext.DataSpaceMemberships.AsNoTracking().ToListAsync(ct));
+    }
+
+    [Fact]
+    public async Task ActorScopedMembershipLookupCannotReadAnotherActorsMembership()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var appContext = PersistenceFixture.CreateAppContext();
+        await using var transaction = await appContext.Database.BeginTransactionAsync(ct);
+        await appContext.Database.ExecuteSqlRawAsync(
+            "SELECT set_config('app.current_actor_id', {0}, true);",
+            [PersistenceFixture.UserAId.ToString()],
+            ct);
+
+        var memberships = await appContext.DataSpaceMemberships.AsNoTracking().ToListAsync(ct);
+
+        Assert.NotEmpty(memberships);
+        Assert.All(memberships, membership => Assert.Equal(PersistenceFixture.UserAId, membership.UserId));
+    }
+
+    [Fact]
+    public async Task ActorScopedMembershipWriteCannotTargetAnotherActor()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var temporarySpaceId = Guid.CreateVersion7();
+        await using var appContext = PersistenceFixture.CreateAppContext();
+        var connection = (NpgsqlConnection)appContext.Database.GetDbConnection();
+        await connection.OpenAsync(ct);
+        await using var transaction = await connection.BeginTransactionAsync(ct);
+
+        await using (var setActor = connection.CreateCommand())
+        {
+            setActor.Transaction = transaction;
+            setActor.CommandText = "SELECT set_config('app.current_actor_id', @actor_id, true);";
+            setActor.Parameters.AddWithValue("actor_id", PersistenceFixture.UserAId.ToString());
+            await setActor.ExecuteNonQueryAsync(ct);
+        }
+
+        await using (var createSpace = connection.CreateCommand())
+        {
+            createSpace.Transaction = transaction;
+            createSpace.CommandText = """
+                INSERT INTO ownership.data_spaces (id, owner_user_id, kind, name)
+                VALUES (@id, @owner_user_id, 'project', 'Actor Scope Probe');
+                """;
+            createSpace.Parameters.AddWithValue("id", temporarySpaceId);
+            createSpace.Parameters.AddWithValue("owner_user_id", PersistenceFixture.UserAId);
+            await createSpace.ExecuteNonQueryAsync(ct);
+        }
+
+        await using var crossActorMembership = connection.CreateCommand();
+        crossActorMembership.Transaction = transaction;
+        crossActorMembership.CommandText = """
+            INSERT INTO ownership.data_space_memberships (id, data_space_id, user_id, role)
+            VALUES (@id, @data_space_id, @user_id, 'viewer');
+            """;
+        crossActorMembership.Parameters.AddWithValue("id", Guid.CreateVersion7());
+        crossActorMembership.Parameters.AddWithValue("data_space_id", temporarySpaceId);
+        crossActorMembership.Parameters.AddWithValue("user_id", PersistenceFixture.UserBId);
+
+        var exception = await Assert.ThrowsAsync<PostgresException>(
+            () => crossActorMembership.ExecuteNonQueryAsync(ct));
+        Assert.Equal(PostgresErrorCodes.InsufficientPrivilege, exception.SqlState);
     }
 
     [Fact]
@@ -442,14 +527,20 @@ public sealed class DatabaseSecurityAndIsolationTests : IAsyncLifetime
             _ = await context.Users.Take(1).ToListAsync(ct);
         }
 
-        // Verify that the runtime secrets are NEVER found in captured logs.
+        // Verify that configured database passwords are NEVER found in captured logs.
         var allLogs = string.Join(Environment.NewLine, capturingLogger.Entries);
-        var appPassword = new NpgsqlConnectionStringBuilder(PersistenceFixture.AppConnectionString).Password;
-        var adminPassword = new NpgsqlConnectionStringBuilder(PersistenceFixture.AdminConnectionString).Password;
-        Assert.False(string.IsNullOrWhiteSpace(appPassword));
-        Assert.False(string.IsNullOrWhiteSpace(adminPassword));
-        Assert.DoesNotContain(appPassword!, allLogs);
-        Assert.DoesNotContain(adminPassword!, allLogs);
+        foreach (var connectionString in new[]
+                 {
+                     PersistenceFixture.AdminConnectionString,
+                     PersistenceFixture.AppConnectionString
+                 })
+        {
+            var configuredPassword = new NpgsqlConnectionStringBuilder(connectionString).Password;
+            if (!string.IsNullOrEmpty(configuredPassword))
+            {
+                Assert.DoesNotContain(configuredPassword, allLogs, StringComparison.Ordinal);
+            }
+        }
     }
 
     [Fact]

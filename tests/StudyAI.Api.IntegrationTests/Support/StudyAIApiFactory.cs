@@ -11,13 +11,16 @@ internal sealed class StudyAIApiFactory : WebApplicationFactory<Program>
 {
     private readonly IReadOnlyDictionary<string, string?> _configuration;
     private readonly bool _includeUnhealthyReadinessCheck;
+    private readonly Action<IServiceCollection>? _configureServices;
 
     public StudyAIApiFactory(
         IReadOnlyDictionary<string, string?>? configuration = null,
-        bool includeUnhealthyReadinessCheck = false)
+        bool includeUnhealthyReadinessCheck = false,
+        Action<IServiceCollection>? configureServices = null)
     {
         _configuration = configuration ?? new Dictionary<string, string?>();
         _includeUnhealthyReadinessCheck = includeUnhealthyReadinessCheck;
+        _configureServices = configureServices;
     }
 
     public CapturingLoggerProvider Logs { get; } = new();
@@ -40,6 +43,11 @@ internal sealed class StudyAIApiFactory : WebApplicationFactory<Program>
                     "forced-unhealthy",
                     () => HealthCheckResult.Unhealthy("Server=private;Password=health-canary"),
                     tags: ["ready"]));
+        }
+
+        if (_configureServices is not null)
+        {
+            builder.ConfigureServices(_configureServices);
         }
     }
 }

@@ -1,12 +1,18 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using StudyAI.Api.Security;
 using StudyAI.Api.IntegrationTests.Persistence;
 using StudyAI.Api.IntegrationTests.Support;
 using StudyAI.Contracts.Auth;
 using StudyAI.Contracts.Workspace;
+using StudyAI.Domain.Ownership;
+using StudyAI.Infrastructure.Persistence;
 using Xunit;
 
 namespace StudyAI.Api.IntegrationTests.Auth;
@@ -43,7 +49,7 @@ public sealed class DataSpaceAuthorizationIntegrationTests : IAsyncLifetime
             AllowAutoRedirect = false
         });
 
-        var regResponse = await registrationClient.PostAsJsonWithCsrfAsync("/api/v1/auth/register", new RegisterRequest
+        var regResponse = await registrationClient.PostWithAntiforgeryAsync("/api/v1/auth/register", new RegisterRequest
         {
             Email = email,
             Password = password,
@@ -60,7 +66,7 @@ public sealed class DataSpaceAuthorizationIntegrationTests : IAsyncLifetime
             AllowAutoRedirect = false
         });
 
-        var loginResponse = await sessionClient.PostAsJsonWithCsrfAsync("/api/v1/auth/login", new LoginRequest
+        var loginResponse = await sessionClient.PostWithAntiforgeryAsync("/api/v1/auth/login", new LoginRequest
         {
             Email = email,
             Password = password
@@ -136,6 +142,48 @@ public sealed class DataSpaceAuthorizationIntegrationTests : IAsyncLifetime
         var fakeId = Guid.NewGuid();
         var response = await unauthClient.GetAsync($"/api/v1/data-spaces/{fakeId}/content-spaces", ct);
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ViewerRoleCannotInvokeMutationThroughAuthorizationFilter()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using (var adminContext = PersistenceFixture.CreateAdminContext())
+        {
+            if (!await adminContext.DataSpaceMemberships.AnyAsync(
+                    membership => membership.DataSpaceId == PersistenceFixture.SpaceAId &&
+                                  membership.UserId == PersistenceFixture.UserBId,
+                    ct))
+            {
+                adminContext.DataSpaceMemberships.Add(new DataSpaceMembership
+                {
+                    Id = Guid.CreateVersion7(),
+                    DataSpaceId = PersistenceFixture.SpaceAId,
+                    UserId = PersistenceFixture.UserBId,
+                    Role = DataSpaceMembership.RoleViewer
+                });
+                await adminContext.SaveChangesAsync(ct);
+            }
+        }
+
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var httpContext = new DefaultHttpContext
+        {
+            RequestServices = scope.ServiceProvider,
+            User = new ClaimsPrincipal(new ClaimsIdentity(
+                [new Claim(ClaimTypes.NameIdentifier, PersistenceFixture.UserBId.ToString())],
+                "Test"))
+        };
+        httpContext.Request.Method = HttpMethods.Post;
+        httpContext.Request.RouteValues["id"] = PersistenceFixture.SpaceAId.ToString();
+        var invocation = new DefaultEndpointFilterInvocationContext(httpContext, []);
+
+        var result = await new DataSpaceAuthorizationFilter().InvokeAsync(
+            invocation,
+            _ => ValueTask.FromResult<object?>(TypedResults.NoContent()));
+
+        var statusResult = Assert.IsAssignableFrom<IStatusCodeHttpResult>(result);
+        Assert.Equal(StatusCodes.Status403Forbidden, statusResult.StatusCode);
     }
 
     [Fact]

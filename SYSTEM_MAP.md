@@ -161,6 +161,12 @@ sequenceDiagram
    Console and log pipelines automatically redact sensitive headers (`Authorization`, `Cookie`), canary tokens, and personal student notes/prompts.
 4. **AI Retrieval Scoping**:
    Retrieved context is filtered by current user Data Space prior to embedding search or prompt composition.
+5. **Actor-Scoped RLS & Transaction Boundary**:
+   Tenant context uses PostgreSQL RLS with transaction-local `app.current_actor_id` and `app.current_data_space_id`. All RLS operations execute within a request-owned explicit transaction boundary managed by `DataSpaceAuthorizationFilter`.
+6. **Server-Verifiable Sessions & CSRF Protection**:
+   Browser authentication uses HttpOnly/SameSite cookies backed by server session records with SHA-256 hashed identifiers, absolute expiry, security stamp revocation, and ASP.NET Core antiforgery tokens on cookie-authenticated mutations.
+7. **Least-Privilege Database Roles**:
+   Application runtime executes as `studyai_app` (`NOBYPASSRLS`, no DDL, denied migration history mutation, allowlisted table DML only); administrative bootstrap and migrations execute as `studyai_migrator` / `studyai_admin`.
 
 ---
 
@@ -179,3 +185,6 @@ sequenceDiagram
   - Infrastructure & Tooling: [`docs/codebase/catalog/infra.md`](docs/codebase/catalog/infra.md)
 - **Current Development State**: [`docs/development/CURRENT_STATE.md`](docs/development/CURRENT_STATE.md)
 - **Open Decisions Register**: [`docs/adr/OPEN_DECISIONS.md`](docs/adr/OPEN_DECISIONS.md)
+- **Authentication Security Runbook**: [`docs/development/AUTHENTICATION_SECURITY_RUNBOOK.md`](docs/development/AUTHENTICATION_SECURITY_RUNBOOK.md)
+- **Database Security Bootstrap Runbook**: [`docs/development/DATABASE_SECURITY_BOOTSTRAP_RUNBOOK.md`](docs/development/DATABASE_SECURITY_BOOTSTRAP_RUNBOOK.md)
+- **Browser Routing Contract**: [`docs/development/BROWSER_ROUTING_CONTRACT.md`](docs/development/BROWSER_ROUTING_CONTRACT.md)

@@ -15,7 +15,8 @@ The application SHALL provide a `POST /api/v1/auth/register` endpoint that valid
 
 #### Scenario: Duplicate registration rejection
 - **WHEN** a client sends a `RegisterRequest` with an email that is already registered (case-insensitive)
-- **THEN** HTTP 409 Conflict is returned with Problem Details and no duplicate records are created
+- **THEN** HTTP 409 Conflict is returned with Problem Details code `auth_email_already_registered` and no duplicate records are created
+- **AND** the same status, title, detail, and code are returned whether the duplicate is found by the application pre-check, Identity validation, or the authoritative PostgreSQL constraint
 
 #### Scenario: Atomic rollback on provisioning failure
 - **WHEN** an unexpected failure occurs during personal space or library provisioning

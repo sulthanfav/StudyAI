@@ -10,14 +10,14 @@ Navigation: [`SYSTEM_MAP.md`](../../SYSTEM_MAP.md) | [`MODULE_INDEX.md`](MODULE_
 
 | Module | Catalog File | Cataloged Files | Verified | Needs Review | Coverage |
 |---|---|---|---|---|---|
-| **API Host** | [`catalog/api-host.md`](catalog/api-host.md) | 19 | 19 | 0 | 100% |
+| **API Host** | [`catalog/api-host.md`](catalog/api-host.md) | 22 | 22 | 0 | 100% |
 | **Application** | [`catalog/application.md`](catalog/application.md) | 14 | 14 | 0 | 100% |
 | **Contracts** | [`catalog/contracts.md`](catalog/contracts.md) | 9 | 9 | 0 | 100% |
-| **Domain** | [`catalog/domain.md`](catalog/domain.md) | 14 | 14 | 0 | 100% |
-| **Infra & Tooling** | [`catalog/infra.md`](catalog/infra.md) | 19 | 19 | 0 | 100% |
-| **Infrastructure** | [`catalog/infrastructure.md`](catalog/infrastructure.md) | 28 | 28 | 0 | 100% |
-| **Test Suites** | [`catalog/tests.md`](catalog/tests.md) | 22 | 22 | 0 | 100% |
-| **Total Baseline** | — | **125** | **125** | **0** | **100%** |
+| **Domain** | [`catalog/domain.md`](catalog/domain.md) | 15 | 15 | 0 | 100% |
+| **Infra & Tooling** | [`catalog/infra.md`](catalog/infra.md) | 24 | 24 | 0 | 100% |
+| **Infrastructure** | [`catalog/infrastructure.md`](catalog/infrastructure.md) | 34 | 34 | 0 | 100% |
+| **Test Suites** | [`catalog/tests.md`](catalog/tests.md) | 31 | 31 | 0 | 100% |
+| **Total Baseline** | — | **147** | **147** | **0** | **100%** |
 
 ---
 
@@ -33,6 +33,8 @@ Navigation: [`SYSTEM_MAP.md`](../../SYSTEM_MAP.md) | [`MODULE_INDEX.md`](MODULE_
 | `Directory.Packages.props` | `root` | Configuration (Central Package Management) | `VERIFIED` | [`catalog/infra.md`](catalog/infra.md) |
 | `StudyAI.slnx` | `root` | Configuration (Solution) | `VERIFIED` | [`catalog/infra.md`](catalog/infra.md) |
 | `apps/api/StudyAI.Api/Composition/AuthServiceCollectionExtensions.cs` | `apps/api/StudyAI.Api` | DI Composition / Configuration | `VERIFIED` | [`catalog/api-host.md`](catalog/api-host.md) |
+| `apps/api/StudyAI.Api/Composition/AuthenticationRateLimiting.cs` | `apps/api/StudyAI.Api` | Security / Configuration | `VERIFIED` | [`catalog/api-host.md`](catalog/api-host.md) |
+| `apps/api/StudyAI.Api/Composition/BrowserAuthOptions.cs` | `apps/api/StudyAI.Api` | Security / Configuration | `VERIFIED` | [`catalog/api-host.md`](catalog/api-host.md) |
 | `apps/api/StudyAI.Api/Composition/FoundationServiceCollectionExtensions.cs` | `apps/api/StudyAI.Api` | Source (Service Registration) | `VERIFIED` | [`catalog/api-host.md`](catalog/api-host.md) |
 | `apps/api/StudyAI.Api/Configuration/FoundationOptions.cs` | `apps/api/StudyAI.Api` | Source (Options Model) | `VERIFIED` | [`catalog/api-host.md`](catalog/api-host.md) |
 | `apps/api/StudyAI.Api/Configuration/FoundationOptionsValidator.cs` | `apps/api/StudyAI.Api` | Source (Validation) | `VERIFIED` | [`catalog/api-host.md`](catalog/api-host.md) |
@@ -44,7 +46,7 @@ Navigation: [`SYSTEM_MAP.md`](../../SYSTEM_MAP.md) | [`MODULE_INDEX.md`](MODULE_
 | `apps/api/StudyAI.Api/Health/SafeHealthResponseWriter.cs` | `apps/api/StudyAI.Api` | Source (HTTP Response Formatter) | `VERIFIED` | [`catalog/api-host.md`](catalog/api-host.md) |
 | `apps/api/StudyAI.Api/Program.cs` | `apps/api/StudyAI.Api` | Source (Host Entry Point) | `VERIFIED` | [`catalog/api-host.md`](catalog/api-host.md) |
 | `apps/api/StudyAI.Api/Properties/launchSettings.json` | `apps/api/StudyAI.Api` | Configuration (Debug Profiles) | `VERIFIED` | [`catalog/api-host.md`](catalog/api-host.md) |
-| `apps/api/StudyAI.Api/Security/AntiforgeryValidationFilter.cs` | `apps/api/StudyAI.Api` | HTTP Security Filter | `VERIFIED` | [`catalog/api-host.md`](catalog/api-host.md) |
+| `apps/api/StudyAI.Api/Security/AntiforgeryValidationFilter.cs` | `apps/api/StudyAI.Api` | Filter / Security | `VERIFIED` | [`catalog/api-host.md`](catalog/api-host.md) |
 | `apps/api/StudyAI.Api/Security/DataSpaceAuthorizationFilter.cs` | `apps/api/StudyAI.Api` | Security / Endpoint Filter | `VERIFIED` | [`catalog/api-host.md`](catalog/api-host.md) |
 | `apps/api/StudyAI.Api/StudyAI.Api.csproj` | `apps/api/StudyAI.Api` | Configuration (Project Manifest) | `VERIFIED` | [`catalog/api-host.md`](catalog/api-host.md) |
 | `apps/api/StudyAI.Api/StudyAI.Api.http` | `apps/api/StudyAI.Api` | Tooling (HTTP Scratchpad) | `VERIFIED` | [`catalog/api-host.md`](catalog/api-host.md) |
@@ -53,9 +55,14 @@ Navigation: [`SYSTEM_MAP.md`](../../SYSTEM_MAP.md) | [`MODULE_INDEX.md`](MODULE_
 | `apps/api/StudyAI.Api/packages.lock.json` | `apps/api/StudyAI.Api` | Configuration (Lockfile) | `VERIFIED` | [`catalog/api-host.md`](catalog/api-host.md) |
 | `global.json` | `root` | Configuration (SDK Pinning) | `VERIFIED` | [`catalog/infra.md`](catalog/infra.md) |
 | `infra/compose/compose.database.yml` | `infra/` | Infrastructure (Docker Compose) | `VERIFIED` | [`catalog/infra.md`](catalog/infra.md) |
+| `infra/postgres/apply-runtime-privileges.sql` | `infra/postgres` | Database Security Policy | `VERIFIED` | [`catalog/infra.md`](catalog/infra.md) |
+| `infra/postgres/bootstrap-roles.sql` | `infra/postgres` | Administrative SQL Bootstrap | `VERIFIED` | [`catalog/infra.md`](catalog/infra.md) |
 | `infra/postgres/concurrency-poc-setup.sql` | `infra/` | Script (SQL Concurrency Setup) | `VERIFIED` | [`catalog/infra.md`](catalog/infra.md) |
 | `infra/postgres/tenant-poc-setup.sql` | `infra/` | Script (SQL PoC Setup) | `VERIFIED` | [`catalog/infra.md`](catalog/infra.md) |
 | `infra/postgres/verify-runtime.sql` | `infra/` | Script (SQL Verification) | `VERIFIED` | [`catalog/infra.md`](catalog/infra.md) |
+| `scripts/Initialize-DatabaseRoles.ps1` | `scripts` | Administrative Database Bootstrap | `VERIFIED` | [`catalog/infra.md`](catalog/infra.md) |
+| `scripts/Set-DatabaseRuntimePrivileges.ps1` | `scripts` | Administrative Database Privilege Application | `VERIFIED` | [`catalog/infra.md`](catalog/infra.md) |
+| `scripts/Test-CleanRoomPostgresBootstrap.ps1` | `scripts` | Database Security Acceptance Test | `VERIFIED` | [`catalog/infra.md`](catalog/infra.md) |
 | `scripts/Test-ConcurrencyInvariants.ps1` | `scripts/` | Script (Test Runner) | `VERIFIED` | [`catalog/infra.md`](catalog/infra.md) |
 | `scripts/Test-TenantIsolationPoC.ps1` | `scripts/` | Script (Test Runner) | `VERIFIED` | [`catalog/infra.md`](catalog/infra.md) |
 | `scripts/Validate-Database.ps1` | `scripts/` | Script (Automation Runner) | `VERIFIED` | [`catalog/infra.md`](catalog/infra.md) |
@@ -69,10 +76,10 @@ Navigation: [`SYSTEM_MAP.md`](../../SYSTEM_MAP.md) | [`MODULE_INDEX.md`](MODULE_
 | `src/StudyAI.Application/Auth/Models/RegisterCommand.cs` | `src/StudyAI.Application` | Command Model | `VERIFIED` | [`catalog/application.md`](catalog/application.md) |
 | `src/StudyAI.Application/Auth/Models/RegisterResult.cs` | `src/StudyAI.Application` | Result Model | `VERIFIED` | [`catalog/application.md`](catalog/application.md) |
 | `src/StudyAI.Application/Common/Interfaces/IApplicationDbContext.cs` | `src/StudyAI.Application` | Service Contract / Interface | `VERIFIED` | [`catalog/application.md`](catalog/application.md) |
+| `src/StudyAI.Application/Common/Interfaces/IAuthorizedDataSpaceScope.cs` | `src/StudyAI.Application` | Security Boundary Contract | `VERIFIED` | [`catalog/application.md`](catalog/application.md) |
 | `src/StudyAI.Application/Common/Interfaces/ICurrentActorContext.cs` | `src/StudyAI.Application` | Service Contract / Interface | `VERIFIED` | [`catalog/application.md`](catalog/application.md) |
 | `src/StudyAI.Application/Common/Interfaces/ICurrentDataSpaceAccessor.cs` | `src/StudyAI.Application` | Service Contract / Interface | `VERIFIED` | [`catalog/application.md`](catalog/application.md) |
 | `src/StudyAI.Application/Common/Interfaces/ICurrentDataSpaceContext.cs` | `src/StudyAI.Application` | Service Contract / Interface | `VERIFIED` | [`catalog/application.md`](catalog/application.md) |
-| `src/StudyAI.Application/Common/Interfaces/IDataSpaceAuthorizationService.cs` | `src/StudyAI.Application` | Service Contract / Interface | `VERIFIED` | [`catalog/application.md`](catalog/application.md) |
 | `src/StudyAI.Application/StudyAI.Application.csproj` | `src/StudyAI.Application` | Configuration (Project Manifest) | `VERIFIED` | [`catalog/application.md`](catalog/application.md) |
 | `src/StudyAI.Application/Workspace/ContentSpaceSummary.cs` | `src/StudyAI.Application` | Query Model | `VERIFIED` | [`catalog/application.md`](catalog/application.md) |
 | `src/StudyAI.Application/Workspace/IContentSpaceReader.cs` | `src/StudyAI.Application` | Query Contract | `VERIFIED` | [`catalog/application.md`](catalog/application.md) |
@@ -94,6 +101,7 @@ Navigation: [`SYSTEM_MAP.md`](../../SYSTEM_MAP.md) | [`MODULE_INDEX.md`](MODULE_
 | `src/StudyAI.Domain/Documents/ProcessingRun.cs` | `src/StudyAI.Domain` | Domain Entity | `VERIFIED` | [`catalog/domain.md`](catalog/domain.md) |
 | `src/StudyAI.Domain/Documents/StorageObject.cs` | `src/StudyAI.Domain` | Domain Entity | `VERIFIED` | [`catalog/domain.md`](catalog/domain.md) |
 | `src/StudyAI.Domain/Identity/User.cs` | `src/StudyAI.Domain` | Domain Entity | `VERIFIED` | [`catalog/domain.md`](catalog/domain.md) |
+| `src/StudyAI.Domain/Identity/UserSession.cs` | `src/StudyAI.Domain` | Domain Entity | `VERIFIED` | [`catalog/domain.md`](catalog/domain.md) |
 | `src/StudyAI.Domain/Knowledge/KnowledgeItem.cs` | `src/StudyAI.Domain` | Domain Entity | `VERIFIED` | [`catalog/domain.md`](catalog/domain.md) |
 | `src/StudyAI.Domain/Ownership/DataSpace.cs` | `src/StudyAI.Domain` | Domain Entity | `VERIFIED` | [`catalog/domain.md`](catalog/domain.md) |
 | `src/StudyAI.Domain/Ownership/DataSpaceMembership.cs` | `src/StudyAI.Domain` | Domain Entity | `VERIFIED` | [`catalog/domain.md`](catalog/domain.md) |
@@ -102,12 +110,17 @@ Navigation: [`SYSTEM_MAP.md`](../../SYSTEM_MAP.md) | [`MODULE_INDEX.md`](MODULE_
 | `src/StudyAI.Domain/packages.lock.json` | `src/StudyAI.Domain` | Configuration (Lockfile) | `VERIFIED` | [`catalog/domain.md`](catalog/domain.md) |
 | `src/StudyAI.Infrastructure/DependencyInjection.cs` | `src/StudyAI.Infrastructure` | Service Registration | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
 | `src/StudyAI.Infrastructure/Identity/AuthService.cs` | `src/StudyAI.Infrastructure` | Service Implementation | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
-| `src/StudyAI.Infrastructure/Identity/DataSpaceAuthorizationService.cs` | `src/StudyAI.Infrastructure` | Service Implementation | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
+| `src/StudyAI.Infrastructure/Identity/AuthenticationSessionOptions.cs` | `src/StudyAI.Infrastructure` | Configuration Model | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
+| `src/StudyAI.Infrastructure/Identity/AuthorizedDataSpaceScopeFactory.cs` | `src/StudyAI.Infrastructure` | Authorization / Transaction Boundary | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
+| `src/StudyAI.Infrastructure/Identity/SessionCookieValidator.cs` | `src/StudyAI.Infrastructure` | Authentication Service | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
+| `src/StudyAI.Infrastructure/Identity/SessionIdentifier.cs` | `src/StudyAI.Infrastructure` | Security Utility | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
 | `src/StudyAI.Infrastructure/Identity/StudyAIUserStore.cs` | `src/StudyAI.Infrastructure` | Identity Store Implementation | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
 | `src/StudyAI.Infrastructure/Migrations/20261020045112_InitialPersistenceBaseline.Designer.cs` | `src/StudyAI.Infrastructure` | Database Migration Metadata | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
 | `src/StudyAI.Infrastructure/Migrations/20261020045112_InitialPersistenceBaseline.cs` | `src/StudyAI.Infrastructure` | Database Migration | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
 | `src/StudyAI.Infrastructure/Migrations/20261020053351_AddIdentityAndMembership.Designer.cs` | `src/StudyAI.Infrastructure` | Database Migration Metadata | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
 | `src/StudyAI.Infrastructure/Migrations/20261020053351_AddIdentityAndMembership.cs` | `src/StudyAI.Infrastructure` | Database Migration | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
+| `src/StudyAI.Infrastructure/Migrations/20261020114606_AuthDatabaseSecurityRemediation.Designer.cs` | `src/StudyAI.Infrastructure` | Database Migration Metadata | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
+| `src/StudyAI.Infrastructure/Migrations/20261020114606_AuthDatabaseSecurityRemediation.cs` | `src/StudyAI.Infrastructure` | Database Migration | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
 | `src/StudyAI.Infrastructure/Migrations/StudyAIDbContextModelSnapshot.cs` | `src/StudyAI.Infrastructure` | Database Migration Metadata | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
 | `src/StudyAI.Infrastructure/Persistence/Configurations/Ai/EmbeddingModelConfiguration.cs` | `src/StudyAI.Infrastructure` | Persistence Configuration | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
 | `src/StudyAI.Infrastructure/Persistence/Configurations/Documents/ChunkEmbeddingConfiguration.cs` | `src/StudyAI.Infrastructure` | Persistence Configuration | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
@@ -117,6 +130,7 @@ Navigation: [`SYSTEM_MAP.md`](../../SYSTEM_MAP.md) | [`MODULE_INDEX.md`](MODULE_
 | `src/StudyAI.Infrastructure/Persistence/Configurations/Documents/ProcessingRunConfiguration.cs` | `src/StudyAI.Infrastructure` | Persistence Configuration | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
 | `src/StudyAI.Infrastructure/Persistence/Configurations/Documents/StorageObjectConfiguration.cs` | `src/StudyAI.Infrastructure` | Persistence Configuration | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
 | `src/StudyAI.Infrastructure/Persistence/Configurations/Identity/UserConfiguration.cs` | `src/StudyAI.Infrastructure` | Persistence Configuration | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
+| `src/StudyAI.Infrastructure/Persistence/Configurations/Identity/UserSessionConfiguration.cs` | `src/StudyAI.Infrastructure` | Entity Configuration | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
 | `src/StudyAI.Infrastructure/Persistence/Configurations/Knowledge/KnowledgeItemConfiguration.cs` | `src/StudyAI.Infrastructure` | Persistence Configuration | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
 | `src/StudyAI.Infrastructure/Persistence/Configurations/Ownership/DataSpaceConfiguration.cs` | `src/StudyAI.Infrastructure` | Persistence Configuration | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
 | `src/StudyAI.Infrastructure/Persistence/Configurations/Ownership/DataSpaceMembershipConfiguration.cs` | `src/StudyAI.Infrastructure` | Entity Configuration | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
@@ -129,19 +143,27 @@ Navigation: [`SYSTEM_MAP.md`](../../SYSTEM_MAP.md) | [`MODULE_INDEX.md`](MODULE_
 | `src/StudyAI.Infrastructure/Workspace/EfContentSpaceReader.cs` | `src/StudyAI.Infrastructure` | Query Adapter | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
 | `src/StudyAI.Infrastructure/packages.lock.json` | `src/StudyAI.Infrastructure` | Configuration (Lockfile) | `VERIFIED` | [`catalog/infrastructure.md`](catalog/infrastructure.md) |
 | `tests/StudyAI.Api.IntegrationTests/ApiSurfaceTests.cs` | `tests/StudyAI.Api.IntegrationTests` | Test | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
+| `tests/StudyAI.Api.IntegrationTests/Auth/AntiforgeryIntegrationTests.cs` | `tests/StudyAI.Api.IntegrationTests` | Test | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
 | `tests/StudyAI.Api.IntegrationTests/Auth/AuthenticationAndSessionIntegrationTests.cs` | `tests/StudyAI.Api.IntegrationTests` | Test | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
+| `tests/StudyAI.Api.IntegrationTests/Auth/AuthenticationRateLimitIntegrationTests.cs` | `tests/StudyAI.Api.IntegrationTests` | Test | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
+| `tests/StudyAI.Api.IntegrationTests/Auth/BrowserAuthConfigurationTests.cs` | `tests/StudyAI.Api.IntegrationTests` | Test | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
+| `tests/StudyAI.Api.IntegrationTests/Auth/BrowserProxyContractIntegrationTests.cs` | `tests/StudyAI.Api.IntegrationTests` | Test | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
 | `tests/StudyAI.Api.IntegrationTests/Auth/DataSpaceAuthorizationIntegrationTests.cs` | `tests/StudyAI.Api.IntegrationTests` | Test | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
+| `tests/StudyAI.Api.IntegrationTests/Auth/RegistrationRaceIntegrationTests.cs` | `tests/StudyAI.Api.IntegrationTests` | Test | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
+| `tests/StudyAI.Api.IntegrationTests/Auth/ServerSessionLifecycleIntegrationTests.cs` | `tests/StudyAI.Api.IntegrationTests` | Test | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
 | `tests/StudyAI.Api.IntegrationTests/Auth/UserRegistrationIntegrationTests.cs` | `tests/StudyAI.Api.IntegrationTests` | Test | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
 | `tests/StudyAI.Api.IntegrationTests/ConfigurationStartupTests.cs` | `tests/StudyAI.Api.IntegrationTests` | Test | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
 | `tests/StudyAI.Api.IntegrationTests/CorrelationAndLoggingTests.cs` | `tests/StudyAI.Api.IntegrationTests` | Test | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
 | `tests/StudyAI.Api.IntegrationTests/HealthEndpointTests.cs` | `tests/StudyAI.Api.IntegrationTests` | Test | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
 | `tests/StudyAI.Api.IntegrationTests/Persistence/DatabaseSecurityAndIsolationTests.cs` | `tests/StudyAI.Api.IntegrationTests` | Test | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
 | `tests/StudyAI.Api.IntegrationTests/Persistence/PersistenceFixture.cs` | `tests/StudyAI.Api.IntegrationTests` | Test Support | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
+| `tests/StudyAI.Api.IntegrationTests/Persistence/SessionModelMetadataTests.cs` | `tests/StudyAI.Api.IntegrationTests` | Test | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
 | `tests/StudyAI.Api.IntegrationTests/StudyAI.Api.IntegrationTests.csproj` | `tests/StudyAI.Api.IntegrationTests` | Configuration (Project Manifest) | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
 | `tests/StudyAI.Api.IntegrationTests/Support/AntiforgeryHttpClientExtensions.cs` | `tests/StudyAI.Api.IntegrationTests` | Test Support | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
 | `tests/StudyAI.Api.IntegrationTests/Support/CapturingLoggerProvider.cs` | `tests/StudyAI.Api.IntegrationTests` | Test Support | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
 | `tests/StudyAI.Api.IntegrationTests/Support/StudyAIApiFactory.cs` | `tests/StudyAI.Api.IntegrationTests` | Test Support | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
 | `tests/StudyAI.Api.IntegrationTests/packages.lock.json` | `tests/StudyAI.Api.IntegrationTests` | Configuration (Lockfile) | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
+| `tests/StudyAI.ArchitectureTests/EndpointArchitectureTests.cs` | `tests/StudyAI.ArchitectureTests` | Test | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
 | `tests/StudyAI.ArchitectureTests/ProjectReferenceRulesTests.cs` | `tests/StudyAI.ArchitectureTests` | Test | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
 | `tests/StudyAI.ArchitectureTests/StudyAI.ArchitectureTests.csproj` | `tests/StudyAI.ArchitectureTests` | Configuration (Project Manifest) | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |
 | `tests/StudyAI.ArchitectureTests/packages.lock.json` | `tests/StudyAI.ArchitectureTests` | Configuration (Lockfile) | `VERIFIED` | [`catalog/tests.md`](catalog/tests.md) |

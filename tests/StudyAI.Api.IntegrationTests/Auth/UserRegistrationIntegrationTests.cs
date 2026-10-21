@@ -3,10 +3,16 @@ using System.Net.Http.Json;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using StudyAI.Api.IntegrationTests.Persistence;
 using StudyAI.Api.IntegrationTests.Support;
+using StudyAI.Application.Auth;
+using StudyAI.Application.Auth.Models;
 using StudyAI.Contracts.Auth;
+using StudyAI.Domain.Identity;
+using StudyAI.Infrastructure.Persistence;
 using Xunit;
 
 namespace StudyAI.Api.IntegrationTests.Auth;
@@ -50,7 +56,7 @@ public sealed class UserRegistrationIntegrationTests : IAsyncLifetime
             DisplayName = "New Student"
         };
 
-        var response = await _client.PostAsJsonWithCsrfAsync("/api/v1/auth/register", request, ct);
+        var response = await _client.PostWithAntiforgeryAsync("/api/v1/auth/register", request, ct);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         Assert.NotNull(response.Headers.Location);
 
@@ -99,16 +105,79 @@ public sealed class UserRegistrationIntegrationTests : IAsyncLifetime
             DisplayName = "First Registration"
         };
 
-        var firstResponse = await _client.PostAsJsonWithCsrfAsync("/api/v1/auth/register", request, ct);
+        var firstResponse = await _client.PostWithAntiforgeryAsync("/api/v1/auth/register", request, ct);
         Assert.Equal(HttpStatusCode.Created, firstResponse.StatusCode);
 
         // Attempt second registration with same email
-        var duplicateResponse = await _client.PostAsJsonWithCsrfAsync("/api/v1/auth/register", request, ct);
+        var duplicateResponse = await _client.PostWithAntiforgeryAsync("/api/v1/auth/register", request, ct);
         Assert.Equal(HttpStatusCode.Conflict, duplicateResponse.StatusCode);
 
         var problem = await duplicateResponse.Content.ReadFromJsonAsync<ProblemDetails>(ct);
-        Assert.NotNull(problem);
-        Assert.Equal(StatusCodes.Status409Conflict, problem.Status);
+        AssertStableDuplicateEmailProblem(problem);
+    }
+
+    [Fact]
+    public async Task IdentityDuplicateValidationReturnsSameStable409Contract()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        await using var factory = new StudyAIApiFactory(
+            new Dictionary<string, string?>
+            {
+                ["Database:ConnectionString"] = PersistenceFixture.AppConnectionString
+            },
+            configureServices: services =>
+                services.AddSingleton<IUserValidator<User>, ForcedDuplicateEmailValidator>());
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            HandleCookies = true,
+            AllowAutoRedirect = false
+        });
+
+        var response = await client.PostWithAntiforgeryAsync(
+            "/api/v1/auth/register",
+            new RegisterRequest
+            {
+                Email = $"identity.duplicate.{Guid.NewGuid():N}@studyai.test",
+                Password = "Password123!",
+                DisplayName = "Identity Duplicate"
+            },
+            ct);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        AssertStableDuplicateEmailProblem(
+            await response.Content.ReadFromJsonAsync<ProblemDetails>(ct));
+    }
+
+    [Fact]
+    public async Task UniqueConstraintCollisionReturnsExplicitDuplicateEmailResult()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var email = $"constraint.duplicate.{Guid.NewGuid():N}@studyai.test";
+        var normalizedEmail = email.ToUpperInvariant();
+        await using var scope = _factory.Services.CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<StudyAIDbContext>();
+        context.Users.Add(new User
+        {
+            Id = Guid.CreateVersion7(),
+            Email = $" {normalizedEmail} ",
+            NormalizedEmail = normalizedEmail,
+            UserName = email,
+            NormalizedUserName = normalizedEmail,
+            DisplayName = "Tracked Collision",
+            SecurityStamp = Guid.NewGuid().ToString("N"),
+            ConcurrencyStamp = Guid.NewGuid().ToString("N")
+        });
+
+        var authService = scope.ServiceProvider.GetRequiredService<IAuthService>();
+        var result = await authService.RegisterAsync(
+            new RegisterCommand(email, "Password123!", "Constraint Duplicate"),
+            ct);
+
+        Assert.IsType<RegisterResult.DuplicateEmail>(result);
+        await using var adminContext = PersistenceFixture.CreateAdminContext();
+        Assert.False(await adminContext.Users.AnyAsync(
+            user => user.NormalizedEmail == normalizedEmail,
+            ct));
     }
 
     [Fact]
@@ -122,7 +191,7 @@ public sealed class UserRegistrationIntegrationTests : IAsyncLifetime
             DisplayName = "Weak Password User"
         };
 
-        var response = await _client.PostAsJsonWithCsrfAsync("/api/v1/auth/register", request, ct);
+        var response = await _client.PostWithAntiforgeryAsync("/api/v1/auth/register", request, ct);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
         // Verify that user was NOT created
@@ -146,8 +215,8 @@ public sealed class UserRegistrationIntegrationTests : IAsyncLifetime
         using var clientA = _factory.CreateClient();
         using var clientB = _factory.CreateClient();
 
-        var taskA = clientA.PostAsJsonWithCsrfAsync("/api/v1/auth/register", request, ct);
-        var taskB = clientB.PostAsJsonWithCsrfAsync("/api/v1/auth/register", request, ct);
+        var taskA = clientA.PostWithAntiforgeryAsync("/api/v1/auth/register", request, ct);
+        var taskB = clientB.PostWithAntiforgeryAsync("/api/v1/auth/register", request, ct);
 
         var responses = await Task.WhenAll(taskA, taskB);
 
@@ -159,5 +228,22 @@ public sealed class UserRegistrationIntegrationTests : IAsyncLifetime
         await using var adminContext = PersistenceFixture.CreateAdminContext();
         var count = await adminContext.Users.CountAsync(u => u.Email == raceEmail, ct);
         Assert.Equal(1, count);
+    }
+
+    private static void AssertStableDuplicateEmailProblem(ProblemDetails? problem)
+    {
+        Assert.NotNull(problem);
+        Assert.Equal(StatusCodes.Status409Conflict, problem.Status);
+        Assert.Equal("Email Already Registered", problem.Title);
+        Assert.Equal("An account with this email already exists.", problem.Detail);
+        Assert.Equal(
+            "auth_email_already_registered",
+            Assert.IsType<System.Text.Json.JsonElement>(problem.Extensions["code"]).GetString());
+    }
+
+    private sealed class ForcedDuplicateEmailValidator : IUserValidator<User>
+    {
+        public Task<IdentityResult> ValidateAsync(UserManager<User> manager, User user) =>
+            Task.FromResult(IdentityResult.Failed(manager.ErrorDescriber.DuplicateEmail(user.Email)));
     }
 }

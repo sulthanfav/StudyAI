@@ -1,5 +1,7 @@
 # OpenSpec Change Proposal: Authentication, Authorization & Personal Data Space
 
+> **Current status (2026-10-20):** Implemented baseline, not security-complete. The active `auth-database-security-remediation` change is the authoritative readiness ledger. This proposal's intended controls must not be treated as verified where that remediation still lists bootstrap/privilege or tenant transaction-boundary work as incomplete.
+
 ## Change Identifier
 `authentication-personal-data-space`
 

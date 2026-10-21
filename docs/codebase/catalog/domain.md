@@ -152,7 +152,18 @@ Status: **VERIFIED**
 - **Responsibility**: Expresses actor membership and roles (owner, member, viewer) within a Data Space.
 - **Public Interfaces / Exports**: `DataSpaceMembership` class.
 - **Dependencies**: None.
-- **Known Callers**: `IApplicationDbContext`, `StudyAIDbContext`, `AuthService`, `DataSpaceAuthorizationService`.
+- **Known Callers**: `IApplicationDbContext`, `StudyAIDbContext`, `AuthService`, `AuthorizedDataSpaceScopeFactory`.
 - **Associated Tests**: `UserRegistrationIntegrationTests.cs`, `DataSpaceAuthorizationIntegrationTests.cs`.
 - **Security / Architectural Notes**: Enforces explicit user-to-dataspace authorization boundary; maps to `ownership.data_space_memberships`.
+- **Verification Status**: `VERIFIED`
+
+### `src/StudyAI.Domain/Identity/UserSession.cs`
+- **Module**: `src/StudyAI.Domain`
+- **Category**: Domain Entity
+- **Responsibility**: Server-verifiable browser session state with a hashed opaque identifier, security-stamp snapshot, absolute expiry, revocation, and last-seen timestamps.
+- **Public Interfaces / Exports**: `UserSession` class.
+- **Dependencies**: None.
+- **Known Callers**: `StudyAIDbContext`, authentication session services.
+- **Associated Tests**: `SessionModelMetadataTests.cs`, `ServerSessionLifecycleIntegrationTests.cs`.
+- **Security / Architectural Notes**: Never persists the plaintext session identifier carried by the encrypted cookie.
 - **Verification Status**: `VERIFIED`

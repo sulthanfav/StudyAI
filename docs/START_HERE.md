@@ -31,6 +31,9 @@ This guide is the single entry point for all software engineers and AI coding ag
 | **Codebase File Index** | [`docs/codebase/FILE_INDEX.md`](codebase/FILE_INDEX.md) | Aggregate catalog of source files, dependencies, and verification status. |
 | **Module File Catalogs** | [`docs/codebase/catalog/`](codebase/catalog/) | Per-module structured file catalogs with VERIFIED/NEEDS_REVIEW status. |
 | **Open Decisions** | [`docs/adr/OPEN_DECISIONS.md`](adr/OPEN_DECISIONS.md) | Unresolved technical and product decisions queue. |
+| **Database Security Operations** | [`docs/development/DATABASE_SECURITY_BOOTSTRAP_RUNBOOK.md`](development/DATABASE_SECURITY_BOOTSTRAP_RUNBOOK.md) | Secret-free role bootstrap, migrations, runtime grants, clean-room checks, and credential rotation. |
+| **Authentication Security** | [docs/development/AUTHENTICATION_SECURITY_RUNBOOK.md](development/AUTHENTICATION_SECURITY_RUNBOOK.md) | CSRF exchange, authentication request limits, and trusted proxy configuration. |
+| **Browser Routing Contract** | [docs/development/BROWSER_ROUTING_CONTRACT.md](development/BROWSER_ROUTING_CONTRACT.md) | Next.js browser proxy routing, CSRF token acquisition, and cookie security. |
 
 ---
 
@@ -90,3 +93,4 @@ This guide is the single entry point for all software engineers and AI coding ag
 | **Sync Doc Index** | `python scripts/docs/sync_codebase_index.py` | Refreshes codebase file index & catalog |
 | **Validate Doc Health** | `python scripts/docs/validate_docs.py` | Verifies doc links, catalog integrity, skills |
 | **Validate Local DB** | `powershell -File scripts/Validate-Database.ps1` | Docker PostgreSQL runtime validation |
+| **Validate Clean DB Bootstrap** | `pwsh -NoProfile -File scripts/Test-CleanRoomPostgresBootstrap.ps1` | Ephemeral no-volume PostgreSQL/ACL acceptance test |

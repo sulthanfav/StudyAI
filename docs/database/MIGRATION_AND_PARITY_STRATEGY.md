@@ -26,7 +26,8 @@ PostgreSQL 16 and `pgvector` introduce database-level invariants that standard C
 ```
 [ Phase 0: Database Cluster Bootstrap ] (Run once by superuser / DBA)
   • CREATE EXTENSION vector, pg_trgm, btree_gist;
-  • CREATE ROLE studyai_migrator, studyai_app, studyai_worker, studyai_ro;
+  • Pre-create/rotate studyai_migrator, studyai_app, studyai_worker, studyai_ro
+    with scripts/Initialize-DatabaseRoles.ps1 and approved secret configuration;
        │
        ▼
 [ Phase 1: EF Core Incremental Schema Migrations ] (Executed by studyai_migrator)
@@ -41,7 +42,15 @@ PostgreSQL 16 and `pgvector` introduce database-level invariants that standard C
   • Row-Level Security policies & FORCE RLS statements
   • Triggers and PL/pgSQL guard functions
   • Vector indexing (HNSW / IVFFlat parameters)
+       │
+       ▼
+[ Phase 3: Explicit Runtime Privileges ] (Executed by DBA after migrations)
+  • Replace ambient grants with infra/postgres/apply-runtime-privileges.sql;
+  • Deny migration history, DDL, ownership, grant options, TEMP, and unapproved tables;
+  • Verify PostgreSQL catalogs and real runtime-role probes.
 ```
+
+The repository does not manage or attest to hosting-provider/cluster-wide default ACLs. Only the explicit privileges applied and verified in the selected target database are repository-controlled. Direct historical migration execution without Phase 0 role pre-bootstrap is unsupported; follow `docs/development/DATABASE_SECURITY_BOOTSTRAP_RUNBOOK.md`.
 
 ---
 

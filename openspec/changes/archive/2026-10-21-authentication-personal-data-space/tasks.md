@@ -1,5 +1,7 @@
 # Tasks: Authentication, Authorization & Personal Data Space
 
+> **Final status (2026-10-21):** The companion `auth-database-security-remediation` change completed the security boundary and verification evidence for this Iteration 4 implementation. Both changes are ready to sync and archive together.
+
 ## 1. Schema Expansion & Compatibility
 
 - [x] 1.1 Extend `StudyAI.Domain.Identity.User` with standard Identity fields (`PasswordHash`, `SecurityStamp`, `ConcurrencyStamp`, `NormalizedUserName`, `NormalizedEmail`, `UserName`, `EmailConfirmed`, `LockoutEnd`, `LockoutEnabled`, `AccessFailedCount`) preserving all canonical columns and defaults.
@@ -48,9 +50,9 @@
 ## 7. Independent Review Remediation
 
 - [x] 7.1 Enforce antiforgery validation and balanced per-IP rate limits on register, login, and logout.
-- [x] 7.2 Enforce the approved 8-hour idle/absolute session policy, 30-day Remember Me cap, and immediate all-device security-stamp revocation on logout.
+- [x] 7.2 Enforce 8-hour idle and ordinary-session absolute caps, a 30-day Remember Me absolute cap, current-device logout, and immediate all-device revocation for password, security-stamp, suspension, and soft-delete changes.
 - [x] 7.3 Move actor/data-space security context and content-space reads behind Application interfaces; remove Persistence dependencies from API endpoints and filters.
 - [x] 7.4 Rebase the disposable pre-production migration baseline with actor-scoped membership RLS, least-privilege grants, and canonical case-insensitive email uniqueness.
 - [x] 7.5 Remove tracked fallback database credentials and require environment-provided test and design-time connections.
 - [x] 7.6 Run adversarial PostgreSQL/API regression coverage and the full solution verification suite.
-- [ ] 7.7 Synchronize OpenSpec, architecture maps, catalogs, current state, and archive the completed backend change.
+- [x] 7.7 Synchronize OpenSpec, architecture maps, catalogs, current state, and archive the completed backend change.

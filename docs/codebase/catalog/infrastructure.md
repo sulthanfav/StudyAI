@@ -42,6 +42,15 @@ Status: **VERIFIED**
 - **Security / Architectural Notes**: Wires scoped interceptors and configures Npgsql connection strings.
 - **Verification Status**: `VERIFIED`
 
+### `src/StudyAI.Infrastructure/Identity/AuthorizedDataSpaceScopeFactory.cs`
+- **Module**: `src/StudyAI.Infrastructure`
+- **Category**: Authorization / Transaction Boundary
+- **Responsibility**: Opens one request-owned transaction, applies actor context, resolves explicit membership and role, applies the authorized Data Space context, and commits or rolls back the complete handler scope.
+- **Dependencies**: `StudyAI.Application`, `StudyAI.Domain`, EF Core.
+- **Associated Tests**: `DataSpaceAuthorizationIntegrationTests.cs`, `DatabaseSecurityAndIsolationTests.cs`, `EndpointArchitectureTests.cs`.
+- **Security / Architectural Notes**: Explicit membership is the only access source; viewer mutation is denied before handler execution and ambient context is cleared on disposal.
+- **Verification Status**: `VERIFIED`
+
 ### `src/StudyAI.Infrastructure/Persistence/StudyAIDbContext.cs`
 - **Module**: `src/StudyAI.Infrastructure`
 - **Category**: Persistence / EF Core
@@ -56,7 +65,7 @@ Status: **VERIFIED**
 ### `src/StudyAI.Infrastructure/Persistence/StudyAIDbContextFactory.cs`
 - **Module**: `src/StudyAI.Infrastructure`
 - **Category**: Persistence / Design-Time
-- **Responsibility**: Design-time factory for EF Core CLI migrations tooling.
+- **Responsibility**: Design-time factory for EF Core CLI migrations tooling; requires administrator-supplied `STUDYAI_MIGRATION_CONNECTION_STRING` and has no credential fallback.
 - **Public Interfaces / Exports**: `IDesignTimeDbContextFactory<StudyAIDbContext>`.
 - **Dependencies**: `Microsoft.EntityFrameworkCore.Design`.
 - **Known Callers**: `dotnet ef` CLI tool.
@@ -233,19 +242,34 @@ Status: **VERIFIED**
 ### `src/StudyAI.Infrastructure/Identity/AuthService.cs`
 - **Module**: `src/StudyAI.Infrastructure`
 - **Category**: Service Implementation
-- **Responsibility**: Implements `IAuthService` coordinating atomic user registration, SignInManager logins, logouts, and user summaries.
-- **Verification Status**: `VERIFIED`
-
-### `src/StudyAI.Infrastructure/Identity/DataSpaceAuthorizationService.cs`
-- **Module**: `src/StudyAI.Infrastructure`
-- **Category**: Service Implementation
-- **Responsibility**: Server-side authorization verifying actor data space ownership or active membership.
+- **Responsibility**: Implements `IAuthService` coordinating atomic registration, explicit duplicate-email outcomes across pre-check/Identity/database paths, SignInManager logins, server-backed logouts, and user summaries.
 - **Verification Status**: `VERIFIED`
 
 ### `src/StudyAI.Infrastructure/Identity/StudyAIUserStore.cs`
 - **Module**: `src/StudyAI.Infrastructure`
 - **Category**: Identity Store Implementation
-- **Responsibility**: EF Core backed ASP.NET Core Identity store for users, passwords, emails, security stamps, and lockouts.
+- **Responsibility**: EF Core backed ASP.NET Core Identity store for users, passwords, emails, security stamps, and lockouts; maps optimistic-concurrency exceptions to controlled Identity failures.
+- **Verification Status**: `VERIFIED`
+
+### `src/StudyAI.Infrastructure/Identity/AuthenticationSessionOptions.cs`
+- **Module**: `src/StudyAI.Infrastructure`
+- **Category**: Configuration Model
+- **Responsibility**: Defines the configured absolute browser-session lifetime used when issuing server session rows.
+- **Security / Architectural Notes**: Contains no secret values; runtime configuration must provide a positive lifetime.
+- **Verification Status**: `VERIFIED`
+
+### `src/StudyAI.Infrastructure/Identity/SessionIdentifier.cs`
+- **Module**: `src/StudyAI.Infrastructure`
+- **Category**: Security Utility
+- **Responsibility**: Generates cryptographically random opaque session identifiers and derives their SHA-256 persistence hashes.
+- **Security / Architectural Notes**: Plaintext identifiers are carried only inside encrypted cookies and are never persisted.
+- **Verification Status**: `VERIFIED`
+
+### `src/StudyAI.Infrastructure/Identity/SessionCookieValidator.cs`
+- **Module**: `src/StudyAI.Infrastructure`
+- **Category**: Authentication Service
+- **Responsibility**: Validates every cookie principal against server revocation, absolute expiry, security stamp, active status, and soft-deletion state.
+- **Associated Tests**: `ServerSessionLifecycleIntegrationTests.cs`.
 - **Verification Status**: `VERIFIED`
 
 ### `src/StudyAI.Infrastructure/Migrations/20261020053351_AddIdentityAndMembership.cs`
@@ -260,8 +284,29 @@ Status: **VERIFIED**
 - **Responsibility**: EF Core designer metadata for identity and membership migration.
 - **Verification Status**: `VERIFIED`
 
+### `src/StudyAI.Infrastructure/Migrations/20261020114606_AuthDatabaseSecurityRemediation.cs`
+- **Module**: `src/StudyAI.Infrastructure`
+- **Category**: Database Migration
+- **Responsibility**: Forward-only security remediation migration creating server-verifiable sessions and an authoritative case/whitespace-normalized email uniqueness boundary.
+- **Security / Architectural Notes**: Performs a read-only collision preflight and aborts with SQLSTATE `23505` before schema changes when collisions exist; it never rewrites existing account rows and does not modify historical migration IDs.
+- **Verification Status**: `VERIFIED`
+
+### `src/StudyAI.Infrastructure/Migrations/20261020114606_AuthDatabaseSecurityRemediation.Designer.cs`
+- **Module**: `src/StudyAI.Infrastructure`
+- **Category**: Database Migration Metadata
+- **Responsibility**: EF Core designer metadata for the security remediation migration.
+- **Verification Status**: `VERIFIED`
+
 ### `src/StudyAI.Infrastructure/Persistence/Configurations/Ownership/DataSpaceMembershipConfiguration.cs`
 - **Module**: `src/StudyAI.Infrastructure`
 - **Category**: Entity Configuration
 - **Responsibility**: EF Core entity type configuration mapping `DataSpaceMembership` to `ownership.data_space_memberships`.
+- **Verification Status**: `VERIFIED`
+
+### `src/StudyAI.Infrastructure/Persistence/Configurations/Identity/UserSessionConfiguration.cs`
+- **Module**: `src/StudyAI.Infrastructure`
+- **Category**: Entity Configuration
+- **Responsibility**: Maps hashed session identifiers, user ownership, absolute expiry, revocation, and active-session lookup indexes to `identity.user_sessions`.
+- **Associated Tests**: `SessionModelMetadataTests.cs`.
+- **Security / Architectural Notes**: Enforces a unique 32-byte identifier hash and contains no plaintext token column.
 - **Verification Status**: `VERIFIED`
