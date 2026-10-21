@@ -10,7 +10,10 @@ public sealed class EfContentSpaceReader(StudyAIDbContext dbContext) : IContentS
         Guid dataSpaceId,
         CancellationToken cancellationToken = default)
     {
-        await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+        var ownsTransaction = dbContext.Database.CurrentTransaction is null;
+        await using var transaction = ownsTransaction
+            ? await dbContext.Database.BeginTransactionAsync(cancellationToken)
+            : null;
         var results = await dbContext.ContentSpaces
             .AsNoTracking()
             .Where(item => item.DataSpaceId == dataSpaceId && item.DeletedAt == null)
@@ -23,7 +26,10 @@ public sealed class EfContentSpaceReader(StudyAIDbContext dbContext) : IContentS
                 item.Description,
                 item.Position))
             .ToListAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
+        if (transaction is not null)
+        {
+            await transaction.CommitAsync(cancellationToken);
+        }
         return results;
     }
 }

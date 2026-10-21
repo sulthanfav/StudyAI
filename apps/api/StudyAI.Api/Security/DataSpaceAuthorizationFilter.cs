@@ -34,11 +34,17 @@ public sealed class DataSpaceAuthorizationFilter : IEndpointFilter
                 detail: "A valid Data Space ID must be provided in the route parameter or X-Data-Space-Id header.");
         }
 
-        var authService = httpContext.RequestServices.GetRequiredService<IDataSpaceAuthorizationService>();
-        var actorAccessor = httpContext.RequestServices.GetRequiredService<ICurrentActorAccessor>();
-        actorAccessor.CurrentActorId = actorId;
-        var canAccess = await authService.CanAccessDataSpaceAsync(actorId, dataSpaceId, httpContext.RequestAborted);
-        if (!canAccess)
+        var requiresMutationAccess = HttpMethods.IsPost(httpContext.Request.Method) ||
+                                     HttpMethods.IsPut(httpContext.Request.Method) ||
+                                     HttpMethods.IsPatch(httpContext.Request.Method) ||
+                                     HttpMethods.IsDelete(httpContext.Request.Method);
+        var scopeFactory = httpContext.RequestServices.GetRequiredService<IAuthorizedDataSpaceScopeFactory>();
+        await using var authorizedScope = await scopeFactory.OpenAsync(
+            actorId,
+            dataSpaceId,
+            requiresMutationAccess,
+            httpContext.RequestAborted);
+        if (authorizedScope is null)
         {
             return TypedResults.Problem(
                 statusCode: StatusCodes.Status403Forbidden,
@@ -46,10 +52,13 @@ public sealed class DataSpaceAuthorizationFilter : IEndpointFilter
                 detail: "The authenticated actor is not authorized to access this Data Space.");
         }
 
-        var accessor = httpContext.RequestServices.GetRequiredService<ICurrentDataSpaceAccessor>();
-        accessor.CurrentDataSpaceId = dataSpaceId;
+        var result = await next(context);
+        if (result is not IStatusCodeHttpResult { StatusCode: >= 400 })
+        {
+            await authorizedScope.CompleteAsync(httpContext.RequestAborted);
+        }
 
-        return await next(context);
+        return result;
     }
 
     private static bool TryResolveDataSpaceId(

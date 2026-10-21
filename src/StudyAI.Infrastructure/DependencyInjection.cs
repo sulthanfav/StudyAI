@@ -45,7 +45,7 @@ public static class DependencyInjection
 
         services.AddScoped<Microsoft.AspNetCore.Identity.IUserStore<StudyAI.Domain.Identity.User>, StudyAI.Infrastructure.Identity.StudyAIUserStore>();
         services.AddScoped<StudyAI.Application.Auth.IAuthService, StudyAI.Infrastructure.Identity.AuthService>();
-        services.AddScoped<IDataSpaceAuthorizationService, StudyAI.Infrastructure.Identity.DataSpaceAuthorizationService>();
+        services.AddScoped<IAuthorizedDataSpaceScopeFactory, StudyAI.Infrastructure.Identity.AuthorizedDataSpaceScopeFactory>();
         services.AddScoped<IContentSpaceReader, EfContentSpaceReader>();
 
         return services;
