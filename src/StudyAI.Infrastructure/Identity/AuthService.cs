@@ -1,9 +1,10 @@
-using Microsoft.AspNetCore.Identity;
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using StudyAI.Application.Auth;
 using StudyAI.Application.Auth.Models;
-using StudyAI.Application.Common.Interfaces;
 using StudyAI.Domain.Identity;
 using StudyAI.Domain.Ownership;
 using StudyAI.Domain.Workspace;
@@ -13,24 +14,29 @@ namespace StudyAI.Infrastructure.Identity;
 
 public sealed class AuthService : IAuthService
 {
+    private const string NormalizedEmailConstraintName = "ux_users_normalized_email";
+
+    private static readonly HashSet<string> DuplicateIdentityErrorCodes =
+        ["DuplicateEmail", "DuplicateUserName"];
+
     private readonly UserManager<User> _userManager;
     private readonly SignInManager<User> _signInManager;
     private readonly StudyAIDbContext _dbContext;
-    private readonly ICurrentActorAccessor _actorAccessor;
-    private readonly ICurrentDataSpaceAccessor _dataSpaceAccessor;
+    private readonly AuthenticationSessionOptions _sessionOptions;
+    private readonly TimeProvider _timeProvider;
 
     public AuthService(
         UserManager<User> userManager,
         SignInManager<User> signInManager,
         StudyAIDbContext dbContext,
-        ICurrentActorAccessor actorAccessor,
-        ICurrentDataSpaceAccessor dataSpaceAccessor)
+        IOptions<AuthenticationSessionOptions> sessionOptions,
+        TimeProvider timeProvider)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _dbContext = dbContext;
-        _actorAccessor = actorAccessor;
-        _dataSpaceAccessor = dataSpaceAccessor;
+        _sessionOptions = sessionOptions.Value;
+        _timeProvider = timeProvider;
     }
 
     public async Task<RegisterResult> RegisterAsync(
@@ -58,19 +64,15 @@ public sealed class AuthService : IAuthService
         var existingUser = await _userManager.FindByEmailAsync(normalizedEmail);
         if (existingUser is not null)
         {
-            throw new InvalidOperationException("Email is already registered.");
+            return new RegisterResult.DuplicateEmail();
         }
 
-        var userId = Guid.CreateVersion7();
-        var dataSpaceId = Guid.CreateVersion7();
-        _actorAccessor.CurrentActorId = userId;
-        _dataSpaceAccessor.CurrentDataSpaceId = dataSpaceId;
         await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             var user = new User
             {
-                Id = userId,
+                Id = Guid.CreateVersion7(),
                 Email = command.Email.Trim(),
                 UserName = command.Email.Trim(),
                 NormalizedEmail = normalizedEmail,
@@ -86,13 +88,18 @@ public sealed class AuthService : IAuthService
             var createResult = await _userManager.CreateAsync(user, command.Password);
             if (!createResult.Succeeded)
             {
+                if (createResult.Errors.Any(error => DuplicateIdentityErrorCodes.Contains(error.Code)))
+                {
+                    return new RegisterResult.DuplicateEmail();
+                }
+
                 var errorMessages = string.Join("; ", createResult.Errors.Select(e => e.Description));
                 throw new ArgumentException($"User registration failed: {errorMessages}");
             }
 
             var dataSpace = new DataSpace
             {
-                Id = dataSpaceId,
+                Id = Guid.CreateVersion7(),
                 OwnerUserId = user.Id,
                 Kind = "personal",
                 Name = $"{user.DisplayName}'s Personal Space",
@@ -123,20 +130,28 @@ public sealed class AuthService : IAuthService
             };
             _dbContext.ContentSpaces.Add(library);
 
-            await _dbContext.SetTenantSessionContextAsync(dataSpace.Id, cancellationToken);
+            await _dbContext.Database.ExecuteSqlRawAsync(
+                "SELECT set_config('app.current_actor_id', {0}, true), set_config('app.current_data_space_id', {1}, true);",
+                [user.Id.ToString(), dataSpace.Id.ToString()],
+                cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            return new RegisterResult(
+            return new RegisterResult.Success(
                 user.Id,
                 user.Email,
                 user.DisplayName,
                 dataSpace.Id,
                 library.Id);
         }
-        catch (DbUpdateException ex) when (ex.InnerException is Npgsql.PostgresException pgEx && pgEx.SqlState == "23505")
+        catch (DbUpdateException ex) when (
+            ex.InnerException is Npgsql.PostgresException
+            {
+                SqlState: Npgsql.PostgresErrorCodes.UniqueViolation,
+                ConstraintName: NormalizedEmailConstraintName
+            })
         {
-            throw new InvalidOperationException("Email is already registered.", ex);
+            return new RegisterResult.DuplicateEmail();
         }
     }
 
@@ -158,6 +173,11 @@ public sealed class AuthService : IAuthService
             return new LoginResult(false, false, false, null, "Invalid credentials.");
         }
 
+        if (!string.Equals(user.Status, "active", StringComparison.Ordinal) || user.DeletedAt is not null)
+        {
+            return new LoginResult(false, false, false, null, "Invalid credentials.");
+        }
+
         if (await _userManager.IsLockedOutAsync(user))
         {
             return new LoginResult(false, true, false, null, "Account is temporarily locked out due to multiple failed attempts.");
@@ -170,25 +190,48 @@ public sealed class AuthService : IAuthService
 
         if (signInResult.Succeeded)
         {
-            var now = DateTimeOffset.UtcNow;
-            var properties = new AuthenticationProperties
+            var absoluteLifetimeSeconds = command.RememberMe
+                ? _sessionOptions.RememberMeAbsoluteLifetimeSeconds
+                : _sessionOptions.StandardAbsoluteLifetimeSeconds;
+            if (absoluteLifetimeSeconds <= 0 || _sessionOptions.IdleLifetimeSeconds <= 0)
             {
-                IsPersistent = command.RememberMe,
-                AllowRefresh = true,
-                ExpiresUtc = now.Add(command.RememberMe ? TimeSpan.FromDays(30) : TimeSpan.FromHours(8))
-            };
-            properties.Items["studyai:session_started_at"] =
-                now.ToUnixTimeSeconds().ToString(System.Globalization.CultureInfo.InvariantCulture);
-            await _signInManager.SignInAsync(user, properties);
+                throw new InvalidOperationException(
+                    "Authentication session lifetimes must be positive numbers of seconds.");
+            }
 
-            var personalSpaceId = await GetPersonalDataSpaceIdAsync(user.Id, cancellationToken);
+            var now = _timeProvider.GetUtcNow();
+            var sessionIdentifier = SessionIdentifier.Create();
+            _dbContext.UserSessions.Add(new UserSession
+            {
+                Id = Guid.CreateVersion7(),
+                UserId = user.Id,
+                SessionIdentifierHash = SessionIdentifier.Hash(sessionIdentifier),
+                SecurityStampSnapshot = user.SecurityStamp,
+                IssuedAt = now,
+                AbsoluteExpiresAt = now.AddSeconds(absoluteLifetimeSeconds),
+                LastSeenAt = now
+            });
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            await _signInManager.SignInWithClaimsAsync(
+                user,
+                new AuthenticationProperties
+                {
+                    IsPersistent = command.RememberMe,
+                    AllowRefresh = true,
+                    ExpiresUtc = now.AddSeconds(absoluteLifetimeSeconds)
+                },
+                [new Claim(SessionIdentifier.ClaimType, sessionIdentifier)]);
+
+            var personalSpace = await _dbContext.DataSpaces
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.OwnerUserId == user.Id && s.Kind == "personal", cancellationToken);
 
             var userSummary = new AuthUserSummary(
                 user.Id,
                 user.Email,
                 user.DisplayName,
                 user.Status,
-                personalSpaceId);
+                personalSpace?.Id ?? Guid.Empty);
 
             return new LoginResult(true, false, false, userSummary, null);
         }
@@ -201,15 +244,19 @@ public sealed class AuthService : IAuthService
         return new LoginResult(false, false, false, null, "Invalid credentials.");
     }
 
-    public async Task LogoutAsync(Guid userId, CancellationToken cancellationToken = default)
+    public async Task LogoutAsync(CancellationToken cancellationToken = default)
     {
-        var user = await _userManager.FindByIdAsync(userId.ToString());
-        if (user is not null)
+        var identifier = _signInManager.Context.User.FindFirstValue(SessionIdentifier.ClaimType);
+        if (!string.IsNullOrWhiteSpace(identifier))
         {
-            var result = await _userManager.UpdateSecurityStampAsync(user);
-            if (!result.Succeeded)
+            var identifierHash = SessionIdentifier.Hash(identifier);
+            var session = await _dbContext.UserSessions.SingleOrDefaultAsync(
+                candidate => candidate.SessionIdentifierHash == identifierHash && candidate.RevokedAt == null,
+                cancellationToken);
+            if (session is not null)
             {
-                throw new InvalidOperationException("Unable to revoke active sessions.");
+                session.RevokedAt = _timeProvider.GetUtcNow();
+                await _dbContext.SaveChangesAsync(cancellationToken);
             }
         }
 
@@ -220,8 +267,6 @@ public sealed class AuthService : IAuthService
         Guid userId,
         CancellationToken cancellationToken = default)
     {
-        _actorAccessor.CurrentActorId = userId;
-        var personalSpaceId = await GetPersonalDataSpaceIdAsync(userId, cancellationToken);
         var user = await _dbContext.Users
             .AsNoTracking()
             .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
@@ -231,24 +276,15 @@ public sealed class AuthService : IAuthService
             return null;
         }
 
+        var personalSpace = await _dbContext.DataSpaces
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.OwnerUserId == user.Id && s.Kind == "personal", cancellationToken);
+
         return new AuthUserSummary(
             user.Id,
             user.Email,
             user.DisplayName,
             user.Status,
-            personalSpaceId);
-    }
-
-    private async Task<Guid> GetPersonalDataSpaceIdAsync(Guid userId, CancellationToken cancellationToken)
-    {
-        _actorAccessor.CurrentActorId = userId;
-        await using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
-        var dataSpaceId = await _dbContext.DataSpaceMemberships
-            .AsNoTracking()
-            .Where(m => m.UserId == userId && m.Role == DataSpaceMembership.RoleOwner)
-            .Select(m => m.DataSpaceId)
-            .FirstOrDefaultAsync(cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-        return dataSpaceId;
+            personalSpace?.Id ?? Guid.Empty);
     }
 }

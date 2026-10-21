@@ -11,6 +11,8 @@ namespace StudyAI.Api.Endpoints;
 
 public static class AuthEndpoints
 {
+    private const string DuplicateEmailErrorCode = "auth_email_already_registered";
+
     public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/v1/auth")
@@ -24,7 +26,6 @@ public static class AuthEndpoints
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .AddEndpointFilter<AntiforgeryValidationFilter>()
-            .RequireRateLimiting("auth-register")
             .AllowAnonymous();
 
         group.MapPost("/login", LoginAsync)
@@ -35,7 +36,6 @@ public static class AuthEndpoints
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status423Locked)
             .AddEndpointFilter<AntiforgeryValidationFilter>()
-            .RequireRateLimiting("auth-login")
             .AllowAnonymous();
 
         group.MapPost("/logout", LogoutAsync)
@@ -74,23 +74,20 @@ public static class AuthEndpoints
         {
             var command = new RegisterCommand(request.Email, request.Password, request.DisplayName);
             var result = await authService.RegisterAsync(command, cancellationToken);
+            if (result is RegisterResult.DuplicateEmail)
+            {
+                return DuplicateEmailConflict();
+            }
+
+            var success = (RegisterResult.Success)result;
             var response = new RegisterResponse(
-                result.UserId,
-                result.Email,
-                result.DisplayName,
-                result.PersonalDataSpaceId,
-                result.LibraryContentSpaceId);
+                success.UserId,
+                success.Email,
+                success.DisplayName,
+                success.PersonalDataSpaceId,
+                success.LibraryContentSpaceId);
 
             return TypedResults.Created("/api/v1/auth/me", response);
-        }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("already registered", StringComparison.OrdinalIgnoreCase))
-        {
-            return TypedResults.Conflict(new ProblemDetails
-            {
-                Status = StatusCodes.Status409Conflict,
-                Title = "Conflict",
-                Detail = ex.Message
-            });
         }
         catch (ArgumentException ex)
         {
@@ -102,6 +99,18 @@ public static class AuthEndpoints
             });
         }
     }
+
+    private static Conflict<ProblemDetails> DuplicateEmailConflict() =>
+        TypedResults.Conflict(new ProblemDetails
+        {
+            Status = StatusCodes.Status409Conflict,
+            Title = "Email Already Registered",
+            Detail = "An account with this email already exists.",
+            Extensions =
+            {
+                ["code"] = DuplicateEmailErrorCode
+            }
+        });
 
     public static async Task<Results<Ok<AuthUserResponse>, ProblemHttpResult, BadRequest<ProblemDetails>>> LoginAsync(
         LoginRequest request,
@@ -138,15 +147,10 @@ public static class AuthEndpoints
     }
 
     public static async Task<NoContent> LogoutAsync(
-        ClaimsPrincipal userPrincipal,
         IAuthService authService,
         CancellationToken cancellationToken)
     {
-        var userIdClaim = userPrincipal.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (Guid.TryParse(userIdClaim, out var userId))
-        {
-            await authService.LogoutAsync(userId, cancellationToken);
-        }
+        await authService.LogoutAsync(cancellationToken);
         return TypedResults.NoContent();
     }
 

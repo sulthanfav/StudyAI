@@ -23,11 +23,13 @@ builder.Services.AddStudyAIAuth(builder.Configuration);
 
 var app = builder.Build();
 
+app.UseRouting();
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseExceptionHandler();
+app.UseForwardedHeaders();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseRateLimiter();
 app.UseAntiforgery();
 app.UseStatusCodePages(async statusCodeContext =>
 {

@@ -17,6 +17,7 @@ public class StudyAIDbContext : DbContext, IApplicationDbContext
     }
 
     public DbSet<User> Users => Set<User>();
+    public DbSet<UserSession> UserSessions => Set<UserSession>();
     public DbSet<DataSpace> DataSpaces => Set<DataSpace>();
     public DbSet<DataSpaceMembership> DataSpaceMemberships => Set<DataSpaceMembership>();
     public DbSet<ContentSpace> ContentSpaces => Set<ContentSpace>();

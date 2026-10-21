@@ -12,11 +12,15 @@ public sealed class StudyAIUserStore :
     IUserSecurityStampStore<User>,
     IUserLockoutStore<User>
 {
-    private readonly StudyAIDbContext _context;
+    private static readonly IdentityErrorDescriber ErrorDescriber = new();
 
-    public StudyAIUserStore(StudyAIDbContext context)
+    private readonly StudyAIDbContext _context;
+    private readonly TimeProvider _timeProvider;
+
+    public StudyAIUserStore(StudyAIDbContext context, TimeProvider timeProvider)
     {
         _context = context;
+        _timeProvider = timeProvider;
     }
 
     // -------------------------------------------------------------------------
@@ -75,20 +79,64 @@ public sealed class StudyAIUserStore :
         }
 
         _context.Users.Add(user);
-        await _context.SaveChangesAsync(cancellationToken);
-        return IdentityResult.Success;
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+            return IdentityResult.Success;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return IdentityResult.Failed(ErrorDescriber.ConcurrencyFailure());
+        }
     }
 
     public async Task<IdentityResult> UpdateAsync(User user, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(user);
 
-        user.UpdatedAt = DateTimeOffset.UtcNow;
+        var persistedState = await _context.Users
+            .AsNoTracking()
+            .Where(candidate => candidate.Id == user.Id)
+            .Select(candidate => new
+            {
+                candidate.PasswordHash,
+                candidate.SecurityStamp,
+                candidate.Status,
+                candidate.DeletedAt
+            })
+            .SingleOrDefaultAsync(cancellationToken);
+
+        var revokeAllSessions = persistedState is not null &&
+            (!string.Equals(persistedState.PasswordHash, user.PasswordHash, StringComparison.Ordinal) ||
+             !string.Equals(persistedState.SecurityStamp, user.SecurityStamp, StringComparison.Ordinal) ||
+             !string.Equals(persistedState.Status, user.Status, StringComparison.Ordinal) ||
+             persistedState.DeletedAt != user.DeletedAt);
+
+        user.UpdatedAt = _timeProvider.GetUtcNow();
         user.ConcurrencyStamp = Guid.NewGuid().ToString("N");
 
         _context.Users.Update(user);
-        await _context.SaveChangesAsync(cancellationToken);
-        return IdentityResult.Success;
+        if (revokeAllSessions)
+        {
+            var revokedAt = _timeProvider.GetUtcNow();
+            var activeSessions = await _context.UserSessions
+                .Where(session => session.UserId == user.Id && session.RevokedAt == null)
+                .ToListAsync(cancellationToken);
+            foreach (var session in activeSessions)
+            {
+                session.RevokedAt = revokedAt;
+            }
+        }
+
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+            return IdentityResult.Success;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return IdentityResult.Failed(ErrorDescriber.ConcurrencyFailure());
+        }
     }
 
     public async Task<IdentityResult> DeleteAsync(User user, CancellationToken cancellationToken)
@@ -96,8 +144,15 @@ public sealed class StudyAIUserStore :
         ArgumentNullException.ThrowIfNull(user);
 
         _context.Users.Remove(user);
-        await _context.SaveChangesAsync(cancellationToken);
-        return IdentityResult.Success;
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+            return IdentityResult.Success;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return IdentityResult.Failed(ErrorDescriber.ConcurrencyFailure());
+        }
     }
 
     public async Task<User?> FindByIdAsync(string userId, CancellationToken cancellationToken)
